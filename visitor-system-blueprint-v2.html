@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ward Visitor System — Blueprint v2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root {
+  --bg:#f5f3ef;--surface:#ffffff;--surface2:#edeae4;--border:#d6d0c8;--border-strong:#b8b0a4;
+  --ink:#1a1714;--ink-dim:#7a7068;--ink-faint:#b0a89e;
+  --accent:#1a5c8a;--accent-light:#e8f2f9;
+  --urgent:#c0392b;--urgent-light:#fdf0ee;
+  --warn:#b8760a;--warn-light:#fdf6e8;
+  --ok:#1a6b4a;--ok-light:#e8f5ef;
+  --eol:#6b3fa0;--eol-light:#f3eeff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5;}
+nav{background:var(--ink);padding:0 28px;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;width:100%;}
+.nav-brand{display:flex;align-items:center;gap:10px;padding:14px 20px 14px 0;border-right:1px solid rgba(255,255,255,0.1);margin-right:8px;flex-shrink:0;}
+.nav-brand .logo{font-family:'DM Mono',monospace;font-size:12px;color:#fff;letter-spacing:0.1em;font-weight:500;}
+.nav-brand .ver{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.05em;}
+.tabs{display:flex;align-items:stretch;flex:1;background:var(--ink);}
+.tab{padding:0 16px;border:none;background:var(--ink);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:rgba(255,255,255,0.4);letter-spacing:0.02em;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab:hover{color:rgba(255,255,255,0.8);background:var(--ink);}
+.tab.active{color:#fff;border-bottom-color:#5ba3d4;background:var(--ink);}
+.page{display:none;padding:36px 28px;max-width:1160px;margin:0 auto;}
+.page.active{display:block;}
+.page-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:4px;}
+.page-heading{font-size:22px;font-weight:600;color:var(--ink);margin-bottom:6px;letter-spacing:-0.02em;}
+.page-sub{font-size:13px;color:var(--ink-dim);margin-bottom:32px;max-width:600px;line-height:1.6;}
+h3{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:12px;letter-spacing:-0.01em;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;}
+.card.accent{border-left:3px solid var(--accent);}
+.card.urgent{border-left:3px solid var(--urgent);}
+.card.ok{border-left:3px solid var(--ok);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:24px;}
+.section{margin-bottom:40px;}
+.section-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.flow{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;}
+.flow-node{flex-shrink:0;width:156px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;}
+.fn-step{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px;}
+.fn-title{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:5px;}
+.fn-desc{font-size:11px;color:var(--ink-dim);line-height:1.45;}
+.flow-node.hl{border-color:var(--accent);background:var(--accent-light);}
+.flow-node.hl .fn-title{color:var(--accent);}
+.flow-node.crit{border-color:var(--ok);background:var(--ok-light);}
+.flow-node.crit .fn-title{color:var(--ok);}
+.flow-arrow{flex-shrink:0;width:36px;display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:16px;padding-top:18px;}
+.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;}
+.badge.hdu{background:var(--accent-light);color:var(--accent);}
+.badge.itu{background:#fff3e8;color:#c05a00;}
+.badge.eol{background:var(--eol-light);color:var(--eol);}
+.badge.rounds{background:var(--warn-light);color:var(--warn);}
+.badge.ok{background:var(--ok-light);color:var(--ok);}
+.badge.warn{background:var(--warn-light);color:var(--warn);}
+.badge.urgent{background:var(--urgent-light);color:var(--urgent);}
+.screen-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.screen-bar{background:var(--ink);padding:8px 14px;display:flex;align-items:center;gap:6px;}
+.screen-bar .dot{width:8px;height:8px;border-radius:50%;}
+.screen-bar .dot.r{background:#ff5f57;}
+.screen-bar .dot.y{background:#ffbd2e;}
+.screen-bar .dot.g{background:#28c840;}
+.screen-title{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.4);margin-left:8px;letter-spacing:0.05em;}
+.screen-body{padding:20px;}
+.kiosk{background:var(--ink);border-radius:10px;padding:32px 24px;max-width:340px;margin:0 auto;}
+.k-ward{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.3);text-align:center;text-transform:uppercase;margin-bottom:28px;}
+.k-heading{font-size:20px;font-weight:600;color:#fff;text-align:center;margin-bottom:6px;letter-spacing:-0.02em;}
+.k-sub{font-size:12px;color:rgba(255,255,255,0.4);text-align:center;margin-bottom:28px;}
+.k-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:5px;display:block;}
+.k-input{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:5px;padding:11px 14px;width:100%;color:rgba(255,255,255,0.9);font-size:14px;font-family:'DM Sans',sans-serif;margin-bottom:14px;}
+.k-btn{width:100%;background:#5ba3d4;color:#fff;font-weight:600;font-family:'DM Sans',sans-serif;font-size:13px;padding:13px;border-radius:5px;border:none;margin-top:4px;cursor:default;text-align:center;}
+.k-btn.warn-btn{background:#b8760a;}
+.k-confirm{margin-top:20px;padding:14px;background:rgba(26,107,74,0.2);border:1px solid rgba(26,107,74,0.4);border-radius:6px;text-align:center;font-size:13px;color:#7fd4ac;line-height:1.6;}
+.k-warn-box{margin-top:20px;padding:14px;background:rgba(184,118,10,0.15);border:1px solid rgba(184,118,10,0.35);border-radius:6px;text-align:center;font-size:13px;color:#f0b84a;line-height:1.6;}
+.k-msg-box{margin-top:20px;padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;font-size:13px;color:rgba(255,255,255,0.8);line-height:1.7;}
+.k-langs{display:flex;gap:6px;justify-content:center;margin-top:20px;flex-wrap:wrap;}
+.k-lang{padding:4px 10px;border:1px solid rgba(255,255,255,0.12);border-radius:3px;font-size:11px;color:rgba(255,255,255,0.35);cursor:default;}
+.k-lang.active{border-color:#5ba3d4;color:#5ba3d4;}
+.k-reminder-btn{width:100%;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);font-size:12px;padding:9px;border-radius:4px;margin-top:12px;text-align:center;cursor:default;}
+.dash-header{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.dh-ward{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;}
+.dh-meta{display:flex;align-items:center;gap:10px;}
+.dh-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink-faint);}
+.visitor-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;border-left:3px solid var(--ok);}
+.visitor-card.waiting-long{border-left-color:var(--urgent);background:var(--urgent-light);}
+.visitor-card.waiting-mid{border-left-color:var(--warn);background:var(--warn-light);}
+.visitor-card.eol-vc{border-left-color:var(--eol);background:var(--eol-light);}
+.vc-indicator{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.vc-indicator.green{background:var(--ok);}
+.vc-indicator.amber{background:var(--warn);}
+.vc-indicator.red{background:var(--urgent);}
+.vc-indicator.purple{background:var(--eol);}
+.vc-body{flex:1;min-width:0;}
+.vc-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px;}
+.vc-detail{font-size:11px;color:var(--ink-dim);display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.vc-wait{font-family:'DM Mono',monospace;font-size:12px;flex-shrink:0;min-width:40px;text-align:right;}
+.vc-wait.ok{color:var(--ok);}
+.vc-wait.amber{color:var(--warn);}
+.vc-wait.red{color:var(--urgent);font-weight:600;}
+.vc-actions{display:flex;gap:6px;flex-shrink:0;}
+.vc-btn{padding:5px 11px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;cursor:default;font-weight:500;border:1px solid transparent;letter-spacing:0.03em;}
+.vc-btn.admit{background:var(--ok);color:#fff;}
+.vc-btn.msg{background:transparent;border-color:var(--border-strong);color:var(--ink-dim);}
+.vc-btn.eol-admit{background:var(--eol);color:#fff;}
+.bed-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;}
+.bed-cell{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:8px 6px;text-align:center;}
+.bn{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--ink);margin-bottom:3px;}
+.bs{font-size:10px;color:var(--ink-faint);}
+.bed-cell.v1{border-color:var(--ok);background:var(--ok-light);}
+.bed-cell.v1 .bs{color:var(--ok);}
+.bed-cell.v2{border-color:var(--accent);background:var(--accent-light);}
+.bed-cell.v2 .bs{color:var(--accent);}
+.bed-cell.vw{border-color:var(--warn);background:var(--warn-light);}
+.bed-cell.vw .bs{color:var(--warn);}
+.bed-cell.veol{border-color:var(--eol);background:var(--eol-light);}
+.bed-cell.veol .bs{color:var(--eol);font-weight:600;}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-dim);}
+.legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{text-align:left;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-faint);padding:8px 12px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--surface2);color:var(--ink);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.rule-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;}
+.rule-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink-faint);flex-shrink:0;margin-top:1px;min-width:20px;}
+.rule-text{font-size:12px;color:var(--ink);line-height:1.6;}
+.rule-text strong{color:var(--ink);font-weight:600;}
+.note{background:var(--warn-light);border:1px solid rgba(184,118,10,0.25);border-radius:6px;padding:12px 16px;font-size:12px;color:var(--warn);line-height:1.6;margin-bottom:16px;}
+.info-note{background:var(--accent-light);border:1px solid rgba(26,92,138,0.2);border-radius:6px;padding:12px 16px;font-size:12px;color:var(--accent);line-height:1.6;margin-bottom:16px;}
+.form-section{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;}
+.form-row{margin-bottom:14px;}
+.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:5px;display:block;}
+.form-input{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:8px 12px;font-size:13px;color:var(--ink);font-family:'DM Sans',sans-serif;width:100%;}
+.form-input.filled{border-color:var(--accent);background:var(--accent-light);}
+.form-hint{font-size:11px;color:var(--ink-faint);margin-top:4px;}
+.form-btn{display:inline-block;padding:8px 18px;border-radius:5px;font-size:12px;font-weight:600;cursor:default;font-family:'DM Sans',sans-serif;margin-right:8px;}
+.form-btn.primary{background:var(--accent);color:#fff;}
+.form-btn.secondary{background:var(--surface2);color:var(--ink-dim);border:1px solid var(--border);}
+.form-btn.danger{background:var(--urgent);color:#fff;}
+.form-btn.eol-btn{background:var(--eol);color:#fff;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--surface2);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-label{font-size:13px;color:var(--ink);}
+.toggle-sub{font-size:11px;color:var(--ink-faint);margin-top:2px;}
+.toggle-switch{width:36px;height:20px;border-radius:10px;flex-shrink:0;cursor:default;}
+.toggle-switch.on{background:var(--ok);}
+.toggle-switch.off{background:var(--border);}
+.msg-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--ink-dim);background:var(--surface2);margin:4px 4px 4px 0;cursor:default;}
+.msg-pill .del{color:var(--urgent);font-size:10px;}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center;}
+.stat-num{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;color:var(--ink);display:block;margin-bottom:4px;}
+.stat-label{font-size:11px;color:var(--ink-faint);}
+.stat-num.urgent{color:var(--urgent);}
+.stat-num.ok{color:var(--ok);}
+.stat-num.eol{color:var(--eol);}
+.compose-area{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:16px;}
+.scroll-x{overflow-x:auto;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <span class="logo">WARD VISITOR SYSTEM</span>
+    <span class="ver">Blueprint v2</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="show('overview',this)">Overview</button>
+    <button class="tab" onclick="show('kiosk',this)">Visitor Kiosk</button>
+    <button class="tab" onclick="show('staff',this)">Staff Dashboard</button>
+    <button class="tab" onclick="show('admin',this)">Ward Admin</button>
+    <button class="tab" onclick="show('rules',this)">Rules &amp; Logic</button>
+    <button class="tab" onclick="show('data',this)">Data Model</button>
+  </div>
+</nav>
+
+<!-- OVERVIEW -->
+<div id="overview" class="page active">
+  <div class="page-title">Blueprint v2 — Generic Locked Ward</div>
+  <div class="page-heading">Ward Visitor Management System</div>
+  <div class="page-sub">A self-configurable, web-based system for any locked ward. Replaces intercom and phone-based entry with a visitor kiosk, staff dashboard, and ward admin panel. Core principle: no visitor is ever left without acknowledgement.</div>
+
+  <div class="section">
+    <div class="section-label">Core visitor journey</div>
+    <div class="flow scroll-x">
+      <div class="flow-node hl"><div class="fn-step">Step 1</div><div class="fn-title">Visitor Arrives</div><div class="fn-desc">Activates kiosk touchscreen at entrance door.</div></div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-node hl"><div class="fn-step">Step 2</div><div class="fn-title">Visitor Registers</div><div class="fn-desc">Enters name and bay number. Selects language if needed.</div></div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-node crit"><div class="fn-step">Step 3 — Critical</div><div class="fn-title">Immediate Confirmation</div><div class="fn-desc">Kiosk instantly confirms: "The ward has been notified." Visitor is never in a feedback vacuum.</div></div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-node"><div class="fn-step">Step 4</div><div class="fn-title">Staff Alerted</div><div class="fn-desc">Dashboard shows new request. EOL and long-wait cases are visually prioritised.</div></div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-node"><div class="fn-step">Step 5</div><div class="fn-title">Staff Acts</div><div class="fn-desc">Admits, holds, or sends a message to the kiosk. Any ward PC can respond.</div></div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-node"><div class="fn-step">Step 6</div><div class="fn-title">Door Released</div><div class="fn-desc">Staff press physical button (now) or system triggers lock release (future). Visit logged.</div></div>
+    </div>
+    <div class="info-note" style="margin-top:8px;">Step 3 is the fundamental change. The visitor receives confirmation before any staff action has occurred.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Three components</div>
+    <div class="g3">
+      <div class="card accent"><h3>&#9312; Visitor Kiosk</h3><p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:6px;">One per entrance. Tablet or small touchscreen in locked full-screen browser mode. Visitor-facing only. Inputs: name, bay number, language. Outputs: confirmation, wait messages, restricted period notices, staff messages. No patient names ever displayed.</p></div>
+      <div class="card accent"><h3>&#9313; Staff Dashboard</h3><p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:6px;">Browser on any ward PC. Live queue of waiting visitors, colour-coded by wait time and priority. Any staff member can act — no login required on trusted ward network. Actions: Admit / Send Message / Hold. Shows live visitor count per bay.</p></div>
+      <div class="card accent"><h3>&#9314; Ward Admin Panel</h3><p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:6px;">For ward sister or senior staff. PIN-protected. Configure ward name, bed count, visitor rules, EOL flags, restricted periods, canned messages, and languages. No IT support needed for day-to-day use. Full access log available here.</p></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">What this solves</div>
+    <div class="g2">
+      <div class="card urgent"><h3 style="color:var(--urgent);margin-bottom:10px;">Current failures</h3>
+        <div class="rule-item"><div class="rule-num">&#10007;</div><div class="rule-text">Visitor rings or calls — no answer — no feedback — waits indefinitely</div></div>
+        <div class="rule-item"><div class="rule-num">&#10007;</div><div class="rule-text">System collapses when reception unmanned (weekends, busy periods)</div></div>
+        <div class="rule-item"><div class="rule-num">&#10007;</div><div class="rule-text">Nurse must leave patient to open door — no resilient fallback</div></div>
+        <div class="rule-item"><div class="rule-num">&#10007;</div><div class="rule-text">No record of who visited, how long they waited, or who admitted them</div></div>
+        <div class="rule-item"><div class="rule-num">&#10007;</div><div class="rule-text">Bay capacity not systematically tracked</div></div>
+      </div>
+      <div class="card ok"><h3 style="color:var(--ok);margin-bottom:10px;">New system addresses</h3>
+        <div class="rule-item"><div class="rule-num" style="color:var(--ok);">&#10003;</div><div class="rule-text"><strong>Visitor always receives confirmation</strong> — immediately, before any staff action</div></div>
+        <div class="rule-item"><div class="rule-num" style="color:var(--ok);">&#10003;</div><div class="rule-text"><strong>Any ward PC</strong> can receive and action a request — no single point of failure</div></div>
+        <div class="rule-item"><div class="rule-num" style="color:var(--ok);">&#10003;</div><div class="rule-text"><strong>Escalating alerts</strong> highlight visitors waiting beyond threshold</div></div>
+        <div class="rule-item"><div class="rule-num" style="color:var(--ok);">&#10003;</div><div class="rule-text"><strong>Full timestamped log</strong> — who arrived, waited, was admitted, and by whom</div></div>
+        <div class="rule-item"><div class="rule-num" style="color:var(--ok);">&#10003;</div><div class="rule-text"><strong>Bay capacity enforced</strong> automatically</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Generalisability</div>
+    <div class="card"><p style="font-size:13px;color:var(--ink-dim);line-height:1.7;">Designed to deploy on any locked ward. Each ward configures its own instance: ward name, bed count, visitor limits, entrance count, canned messages, languages, and restricted period rules. The HDU/ITU deployment is the first use case but the system does not depend on it.</p></div>
+  </div>
+</div>
+
+<!-- KIOSK -->
+<div id="kiosk" class="page">
+  <div class="page-title">Component 1</div>
+  <div class="page-heading">Visitor Kiosk</div>
+  <div class="page-sub">One per entrance. Full-screen browser on a wall-mounted tablet. The visitor's only interface with the system.</div>
+
+  <div class="g2">
+    <div>
+      <h3 style="margin-bottom:12px;">State 1 — Ready for input</h3>
+      <div class="screen-wrap">
+        <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">kiosk · entrance A · idle</span></div>
+        <div class="screen-body">
+          <div class="kiosk">
+            <div class="k-ward">HDU / ITU · Entrance A</div>
+            <div class="k-heading">Welcome</div>
+            <div class="k-sub">Please register your arrival</div>
+            <span class="k-label">Your name</span>
+            <div class="k-input" style="color:rgba(255,255,255,0.25);font-style:italic;">e.g. Sarah Jones</div>
+            <span class="k-label">Bay number you are visiting</span>
+            <div class="k-input" style="color:rgba(255,255,255,0.25);font-style:italic;">e.g. 12</div>
+            <div class="k-btn">Notify the ward &#8594;</div>
+            <div class="k-langs">
+              <div class="k-lang active">English</div>
+              <div class="k-lang">Polski</div>
+              <div class="k-lang">Romana</div>
+              <div class="k-lang">Portugues</div>
+              <div class="k-lang">Urdu</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:12px;">State 2 — Confirmed (the critical state)</h3>
+      <div class="screen-wrap">
+        <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">kiosk · entrance A · confirmed</span></div>
+        <div class="screen-body">
+          <div class="kiosk">
+            <div class="k-ward">HDU / ITU · Entrance A</div>
+            <div class="k-heading">Thank you, Sarah</div>
+            <div class="k-sub">Bay 12 · HDU</div>
+            <div class="k-confirm">&#10003; The ward has been notified of your arrival.<br><br>Please take a seat. A member of staff will be with you shortly.</div>
+            <div style="margin-top:14px;padding:12px;background:rgba(255,255,255,0.04);border-radius:5px;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;line-height:1.6;">If you have been waiting more than 15 minutes, use the button below to send a reminder to the ward.</div>
+            <div class="k-reminder-btn">Send a reminder &#8594;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div>
+      <h3 style="margin-bottom:12px;">State 3 — Restricted period active</h3>
+      <div class="screen-wrap">
+        <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">kiosk · entrance A · restricted period</span></div>
+        <div class="screen-body">
+          <div class="kiosk">
+            <div class="k-ward">HDU / ITU · Entrance A</div>
+            <div class="k-heading" style="color:#f0b84a;">Ward Round in Progress</div>
+            <div class="k-sub">Visiting is temporarily paused</div>
+            <div class="k-warn-box">Visiting will resume at approximately<br><strong style="font-size:20px;display:block;margin-top:4px;">10:30</strong></div>
+            <div style="margin-top:14px;padding:10px;background:rgba(255,255,255,0.04);border-radius:5px;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;line-height:1.6;">You may register now. Staff will admit you when the round is complete.</div>
+            <span class="k-label" style="margin-top:14px;display:block;">Your name</span>
+            <div class="k-input" style="color:rgba(255,255,255,0.25);font-style:italic;">e.g. Sarah Jones</div>
+            <span class="k-label">Bay number</span>
+            <div class="k-input" style="color:rgba(255,255,255,0.25);font-style:italic;">e.g. 12</div>
+            <div class="k-btn warn-btn">Join the waiting list &#8594;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:12px;">State 4 — Message from staff</h3>
+      <div class="screen-wrap">
+        <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">kiosk · entrance A · staff message</span></div>
+        <div class="screen-body">
+          <div class="kiosk">
+            <div class="k-ward">HDU / ITU · Entrance A</div>
+            <div class="k-heading">Message from the Ward</div>
+            <div class="k-sub">For: Sarah Jones · Bay 12</div>
+            <div class="k-msg-box">"We are with your relative at the moment. Please wait — we will come to you in approximately 10 minutes."<br><br><span style="font-size:11px;color:rgba(255,255,255,0.3);">Sent at 14:32</span></div>
+            <div class="k-confirm" style="margin-top:14px;">&#10003; Your arrival is still registered. Please remain seated.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="note">Language selector persists for the session. All screen text and canned messages are pre-translated. Bay number entry is numeric and language-neutral. Languages shown are illustrative — configured per ward in the admin panel.</div>
+</div>
+
+<!-- STAFF -->
+<div id="staff" class="page">
+  <div class="page-title">Component 2</div>
+  <div class="page-heading">Staff Dashboard</div>
+  <div class="page-sub">Runs in a browser on any ward PC. No login required on the trusted ward network. Any staff member can act on any visitor request.</div>
+
+  <div class="screen-wrap">
+    <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">staff-dashboard · HDU/ITU</span></div>
+    <div class="screen-body">
+      <div class="dash-header">
+        <span class="dh-ward">HDU / ITU — Visitor Management</span>
+        <div class="dh-meta"><span class="badge rounds">&#9888; Ward Round Active</span><span class="dh-time">Mon 09:47</span></div>
+      </div>
+      <div class="g4" style="margin-bottom:16px;">
+        <div class="stat-box"><span class="stat-num urgent">3</span><span class="stat-label">Waiting at entrance</span></div>
+        <div class="stat-box"><span class="stat-num ok">6</span><span class="stat-label">Visitors on ward</span></div>
+        <div class="stat-box"><span class="stat-num eol">1</span><span class="stat-label">EOL bay flagged</span></div>
+        <div class="stat-box"><span class="stat-num">22m</span><span class="stat-label">Longest wait</span></div>
+      </div>
+
+      <h3 style="margin-bottom:10px;">Waiting at Entrance</h3>
+      <div class="visitor-card eol-vc">
+        <div class="vc-indicator purple"></div>
+        <div class="vc-body">
+          <div class="vc-name">Margaret &amp; David Collins</div>
+          <div class="vc-detail"><span class="badge eol">EOL</span> Bay 7 · ITU · Entrance B</div>
+        </div>
+        <div class="vc-wait amber">3m</div>
+        <div class="vc-actions"><div class="vc-btn eol-admit">Admit now</div></div>
+      </div>
+      <div class="visitor-card waiting-long">
+        <div class="vc-indicator red"></div>
+        <div class="vc-body">
+          <div class="vc-name">James Okafor <span style="font-size:11px;color:var(--urgent);font-weight:400;">· Reminder sent</span></div>
+          <div class="vc-detail"><span class="badge itu">ITU</span> Bay 3 · Entrance A</div>
+        </div>
+        <div class="vc-wait red">22m</div>
+        <div class="vc-actions"><div class="vc-btn admit">Admit</div><div class="vc-btn msg">Message</div></div>
+      </div>
+      <div class="visitor-card">
+        <div class="vc-indicator green"></div>
+        <div class="vc-body">
+          <div class="vc-name">Priya Sharma</div>
+          <div class="vc-detail"><span class="badge hdu">HDU</span> Bay 14 · Entrance A</div>
+        </div>
+        <div class="vc-wait ok">4m</div>
+        <div class="vc-actions"><div class="vc-btn admit">Admit</div><div class="vc-btn msg">Message</div></div>
+      </div>
+
+      <div class="compose-area" style="margin-top:16px;">
+        <h3 style="font-size:12px;margin-bottom:10px;">Send Message to Visitor at Kiosk</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <div class="msg-pill">"Please wait — we will be with you shortly"</div>
+          <div class="msg-pill">"Ward round in progress — approx 20 min"</div>
+          <div class="msg-pill">"Only 1 visitor at this bay currently"</div>
+          <div class="msg-pill" style="border-style:dashed;color:var(--accent);">+ Custom message</div>
+        </div>
+        <div style="font-size:11px;color:var(--ink-faint);">Canned messages are configured in Ward Admin. Message appears on visitor's kiosk screen immediately.</div>
+      </div>
+
+      <h3 style="margin-bottom:10px;margin-top:20px;">HDU — Bay Status</h3>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--surface);border:1px solid var(--border);"></div> No visitor</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--ok-light);border:1px solid var(--ok);"></div> 1 visitor</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent-light);border:1px solid var(--accent);"></div> 2 visitors (full)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--warn-light);border:1px solid var(--warn);"></div> Visitor waiting</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--eol-light);border:1px solid var(--eol);"></div> EOL flagged</div>
+      </div>
+      <div class="bed-grid">
+        <div class="bed-cell"><div class="bn">01</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">02</div><div class="bs">—</div></div>
+        <div class="bed-cell v1"><div class="bn">03</div><div class="bs">1 visitor</div></div>
+        <div class="bed-cell"><div class="bn">04</div><div class="bs">—</div></div>
+        <div class="bed-cell v2"><div class="bn">05</div><div class="bs">2 visitors</div></div>
+        <div class="bed-cell"><div class="bn">06</div><div class="bs">—</div></div>
+        <div class="bed-cell veol"><div class="bn">07</div><div class="bs">EOL</div></div>
+        <div class="bed-cell"><div class="bn">08</div><div class="bs">—</div></div>
+        <div class="bed-cell vw"><div class="bn">09</div><div class="bs">waiting</div></div>
+        <div class="bed-cell"><div class="bn">10</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">11</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">12</div><div class="bs">—</div></div>
+        <div class="bed-cell v1"><div class="bn">13</div><div class="bs">1 visitor</div></div>
+        <div class="bed-cell vw"><div class="bn">14</div><div class="bs">waiting</div></div>
+        <div class="bed-cell"><div class="bn">15</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">16</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">17</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">18</div><div class="bs">—</div></div>
+        <div class="bed-cell v1"><div class="bn">19</div><div class="bs">1 visitor</div></div>
+        <div class="bed-cell"><div class="bn">20</div><div class="bs">—</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="note"><strong>Door release — interim design:</strong> The Admit button prompts staff to press the physical button at the door. Future integration with the electronic lock would allow the Admit button to release the door directly. The system is designed to support both states.</div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin" class="page">
+  <div class="page-title">Component 3</div>
+  <div class="page-heading">Ward Admin Panel</div>
+  <div class="page-sub">For ward sister or senior staff. PIN-protected — no trust IT account required. Configures the entire ward instance. Changes take effect immediately on all kiosks and the dashboard.</div>
+
+  <div class="g2">
+    <div>
+      <div class="section-label">Ward configuration</div>
+      <div class="form-section">
+        <h3 style="margin-bottom:14px;">Ward Identity</h3>
+        <div class="form-row"><span class="form-label">Ward name (shown on kiosk)</span><input class="form-input filled" value="HDU / ITU" readonly><div class="form-hint">Displayed on every kiosk screen</div></div>
+        <div class="form-row"><span class="form-label">Number of bays / beds</span><input class="form-input filled" value="25 HDU · 25 ITU" readonly><div class="form-hint">Used to validate bay numbers entered by visitors</div></div>
+        <div class="form-row"><span class="form-label">Number of entrances</span><input class="form-input filled" value="2 (Entrance A · Entrance B)" readonly></div>
+        <div class="form-row"><span class="form-label">Maximum visitors per bay</span><input class="form-input filled" value="2" readonly></div>
+        <div class="form-btn primary">Save changes</div>
+      </div>
+
+      <div class="form-section">
+        <h3 style="margin-bottom:14px;">Restricted Periods</h3>
+        <p style="font-size:12px;color:var(--ink-dim);margin-bottom:14px;line-height:1.6;">Set manually when needed — ward rounds, handover, or any clinical need. No fixed schedule. Kiosk switches immediately when activated.</p>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Ward round active</div><div class="toggle-sub">Pauses admissions · visitors can still register and queue</div></div>
+          <div class="toggle-switch on"></div>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Handover in progress</div><div class="toggle-sub">Same behaviour as ward round</div></div>
+          <div class="toggle-switch off"></div>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Ward closed to visitors</div><div class="toggle-sub">Emergency or clinical need — kiosk shows closure notice only</div></div>
+          <div class="toggle-switch off"></div>
+        </div>
+        <div style="margin-top:14px;">
+          <span class="form-label">Estimated resumption time (shown on kiosk)</span>
+          <input class="form-input" value="10:30" style="width:120px;">
+          <div class="form-hint">Leave blank to show "time not yet known"</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Bay flags</div>
+      <div class="form-section">
+        <h3 style="margin-bottom:14px;">End of Life Bay Flags</h3>
+        <p style="font-size:12px;color:var(--ink-dim);margin-bottom:14px;line-height:1.6;">EOL-flagged bays appear at the top of the visitor queue. Staff exercise their own judgement — the system surfaces the request, it does not auto-admit.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <div class="badge eol" style="padding:5px 10px;font-size:11px;">Bay 7 ITU — EOL &#10005;</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input class="form-input" placeholder="Bay number" style="width:110px;">
+          <select class="form-input" style="width:90px;"><option>ITU</option><option>HDU</option></select>
+          <div class="form-btn eol-btn">Flag EOL</div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:8px;">Kiosk messages</div>
+      <div class="form-section">
+        <h3 style="margin-bottom:10px;">Canned Messages</h3>
+        <p style="font-size:12px;color:var(--ink-dim);margin-bottom:14px;line-height:1.6;">Pre-written messages staff send to a visitor's kiosk screen with one click. Edit freely. All messages should be translated for any active kiosk languages.</p>
+        <div style="margin-bottom:12px;">
+          <div class="msg-pill">"Please wait — we will be with you shortly" <span class="del">&#10005;</span></div>
+          <div class="msg-pill">"Ward round in progress — approx 20 min" <span class="del">&#10005;</span></div>
+          <div class="msg-pill">"Only 1 visitor at this bay currently" <span class="del">&#10005;</span></div>
+          <div class="msg-pill">"Please make your way to the ward entrance" <span class="del">&#10005;</span></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input class="form-input" placeholder="New message text..." style="flex:1;">
+          <div class="form-btn primary">Add</div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:8px;">Languages</div>
+      <div class="form-section">
+        <h3 style="margin-bottom:10px;">Kiosk Languages</h3>
+        <p style="font-size:12px;color:var(--ink-dim);margin-bottom:14px;line-height:1.6;">English always present. Adding a language requires translations — a one-time setup task.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <div class="badge ok" style="padding:5px 10px;font-size:11px;">English &#10003;</div>
+          <div class="badge hdu" style="padding:5px 10px;font-size:11px;">Polski &#10003;</div>
+          <div class="badge hdu" style="padding:5px 10px;font-size:11px;">Romana &#10003;</div>
+          <div class="badge" style="padding:5px 10px;font-size:11px;background:var(--surface2);color:var(--ink-faint);">+ Add language</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Access log</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Time</th><th>Visitor</th><th>Bay</th><th>Ward</th><th>Entrance</th><th>Wait</th><th>Status</th><th>Actioned by</th></tr></thead>
+        <tbody>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">09:12</td><td>James Okafor</td><td>3</td><td><span class="badge itu">ITU</span></td><td>A</td><td style="color:var(--urgent);font-weight:600;">22m</td><td><span class="badge urgent">Waiting</span></td><td>—</td></tr>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">09:31</td><td>Priya Sharma</td><td>14</td><td><span class="badge hdu">HDU</span></td><td>A</td><td>4m</td><td><span class="badge warn">Waiting</span></td><td>—</td></tr>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">08:55</td><td>M. &amp; D. Collins</td><td>7</td><td><span class="badge itu">ITU</span></td><td>B</td><td>3m</td><td><span class="badge eol">EOL waiting</span></td><td>—</td></tr>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">08:30</td><td>Fatima Al-Hassan</td><td>5</td><td><span class="badge hdu">HDU</span></td><td>A</td><td>6m</td><td><span class="badge ok">Admitted</span></td><td>B. Okonjo</td></tr>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">08:15</td><td>Tom Whitfield</td><td>5</td><td><span class="badge hdu">HDU</span></td><td>A</td><td>3m</td><td><span class="badge ok">Admitted</span></td><td>B. Okonjo</td></tr>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">07:58</td><td>Anita Kowalski</td><td>19</td><td><span class="badge hdu">HDU</span></td><td>B</td><td>8m</td><td><span class="badge ok">Admitted</span></td><td>S. Ahmed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- RULES -->
+<div id="rules" class="page">
+  <div class="page-title">System Logic</div>
+  <div class="page-heading">Rules &amp; Logic</div>
+  <div class="page-sub">How the system behaves in each scenario. Based on confirmed requirements — flagged items need further input before build.</div>
+
+  <div class="section">
+    <div class="section-label">Admission rules</div>
+    <div class="rule-item"><div class="rule-num">&#9312;</div><div class="rule-text"><strong>Maximum 2 visitors per bay.</strong> System checks live count before admitting. If full, visitor sees: "There are already 2 visitors at Bay X. You will be admitted when one leaves." Enforced at system level.</div></div>
+    <div class="rule-item"><div class="rule-num">&#9313;</div><div class="rule-text"><strong>Restricted periods block new admissions.</strong> Kiosk shows restricted period screen. Visitors can still register and queue. When period ends, queued visitors are presented to staff in order of arrival.</div></div>
+    <div class="rule-item"><div class="rule-num">&#9314;</div><div class="rule-text"><strong>EOL bays are highest priority.</strong> Always shown at top of queue regardless of wait time. Staff exercise their own judgement — the system surfaces the request prominently, it does not auto-admit.</div></div>
+    <div class="rule-item"><div class="rule-num">&#9315;</div><div class="rule-text"><strong>No visitor is ever left without acknowledgement.</strong> Kiosk confirms receipt immediately on submission, before any staff action.</div></div>
+    <div class="rule-item"><div class="rule-num">&#9316;</div><div class="rule-text"><strong>Any staff member can act on any request.</strong> Dashboard on all ward PCs, no login barrier, shared queue.</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Escalation — wait time thresholds</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Wait time</th><th>Kiosk</th><th>Dashboard card</th><th>Staff action</th></tr></thead>
+        <tbody>
+          <tr><td>0 – 5 min</td><td>Green — "Ward notified"</td><td>Green</td><td>None required</td></tr>
+          <tr><td>5 – 15 min</td><td>Green — "Please continue to wait"</td><td>Amber</td><td>Soft visual prompt</td></tr>
+          <tr><td>15+ min</td><td>Amber — reminder button appears</td><td>Red — escalated</td><td>Prominent alert</td></tr>
+          <tr><td>Visitor presses reminder</td><td>Confirms reminder sent</td><td>Reminder flag on card</td><td>No further automation — staff must act</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">Thresholds (5 min / 15 min) are proposals. Should be agreed with ward staff before build and made configurable in the admin panel.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Restricted period logic</div>
+    <div class="rule-item"><div class="rule-num">·</div><div class="rule-text">Staff activate any restricted period manually via admin panel — ward rounds, handover, or emergency closure.</div></div>
+    <div class="rule-item"><div class="rule-num">·</div><div class="rule-text">Kiosk immediately switches to restricted period screen with estimated resumption time, or "time not yet known" if not set.</div></div>
+    <div class="rule-item"><div class="rule-num">·</div><div class="rule-text">Visitors already on the ward during a restricted period — <strong>staff continue to manage departures verbally, as at present.</strong> The system does not attempt to replace this.</div></div>
+    <div class="rule-item"><div class="rule-num">·</div><div class="rule-text">When period ends, staff clear the flag. Queued visitors are presented to staff in order of arrival.</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Outstanding items before build</div>
+    <div class="card urgent">
+      <table>
+        <thead><tr><th>#</th><th>Item</th><th>Why it matters</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td>Electronic door integration — estates/IT feasibility assessment</td><td>Determines whether Admit button can release door or alerts staff to press button manually</td><td style="color:var(--urgent);">Open</td></tr>
+          <tr><td>B</td><td>Confirm wait time thresholds (5 min / 15 min)</td><td>Should reflect realistic ward expectations</td><td style="color:var(--urgent);">Open</td></tr>
+          <tr><td>C</td><td>Identify languages needed on kiosk beyond English</td><td>Translation work required before go-live</td><td style="color:var(--urgent);">Open</td></tr>
+          <tr><td>D</td><td>Information governance / data review with trust</td><td>System stores visitor names and bay numbers — needs sign-off</td><td style="color:var(--urgent);">Open</td></tr>
+          <tr><td>E</td><td>Hardware — tablet or screen at each entrance</td><td>Procurement and installation needed</td><td style="color:var(--urgent);">Open</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DATA -->
+<div id="data" class="page">
+  <div class="page-title">Technical</div>
+  <div class="page-heading">Data Model</div>
+  <div class="page-sub">What the system stores. Designed to be minimal. No patient names are ever stored — bay numbers are the only link between visitor and patient location.</div>
+
+  <div class="g2">
+    <div>
+      <div class="section-label">Visit record</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>visit_id</td><td>UUID</td><td>Auto-generated</td></tr>
+            <tr><td>visitor_name</td><td>String</td><td>Free text, entered by visitor</td></tr>
+            <tr><td>bay_number</td><td>Integer</td><td>Validated against ward config</td></tr>
+            <tr><td>ward</td><td>Enum</td><td>Configured per deployment</td></tr>
+            <tr><td>entrance</td><td>Enum</td><td>A / B — from kiosk source</td></tr>
+            <tr><td>arrived_at</td><td>Timestamp</td><td>On form submission</td></tr>
+            <tr><td>admitted_at</td><td>Timestamp</td><td>On staff admit action</td></tr>
+            <tr><td>status</td><td>Enum</td><td>waiting / admitted / held / departed</td></tr>
+            <tr><td>actioned_by</td><td>String</td><td>Staff name — free text</td></tr>
+            <tr><td>reminder_sent</td><td>Boolean</td><td>Visitor pressed reminder</td></tr>
+            <tr><td>messages</td><td>Array</td><td>Staff messages sent to kiosk</td></tr>
+            <tr><td>language</td><td>String</td><td>Visitor's selected language</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">Bay record</div>
+      <div class="card" style="margin-bottom:16px;">
+        <table>
+          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>bay_id</td><td>Integer</td><td>Configured per ward</td></tr>
+            <tr><td>ward</td><td>String</td><td>Configured per ward</td></tr>
+            <tr><td>eol_flag</td><td>Boolean</td><td>Set/cleared by senior staff</td></tr>
+            <tr><td>current_visitors</td><td>Integer</td><td>Live count — enforced max</td></tr>
+            <tr><td>active</td><td>Boolean</td><td>Bed occupied</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="section-label">Ward state</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>ward_name</td><td>String</td><td>Configured in admin</td></tr>
+            <tr><td>restricted_period_active</td><td>Boolean</td><td>Set manually</td></tr>
+            <tr><td>restriction_type</td><td>Enum</td><td>round / handover / emergency</td></tr>
+            <tr><td>resume_time</td><td>Time</td><td>Optional — displayed on kiosk</td></tr>
+            <tr><td>max_visitors_per_bay</td><td>Integer</td><td>Configured in admin</td></tr>
+            <tr><td>entrances</td><td>Array</td><td>Configured in admin</td></tr>
+            <tr><td>languages</td><td>Array</td><td>Active kiosk languages</td></tr>
+            <tr><td>canned_messages</td><td>Array</td><td>Editable in admin</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Privacy note</div>
+    <div class="info-note">The system stores visitor names and bay numbers only. No patient names, dates of birth, or clinical information are held. This minimises personal data exposure and should be reviewed by the trust's information governance team before deployment.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Technical stack — suggested</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Layer</th><th>Suggestion</th><th>Rationale</th></tr></thead>
+        <tbody>
+          <tr><td>Frontend</td><td>Standard web browser (Chrome / Edge)</td><td>Runs on existing ward PCs and kiosk tablets without installation</td></tr>
+          <tr><td>Kiosk mode</td><td>Browser in full-screen / kiosk mode</td><td>Locks tablet to single app at entrance</td></tr>
+          <tr><td>Real-time updates</td><td>WebSockets or server-sent events</td><td>Dashboard and kiosk update instantly without page refresh</td></tr>
+          <tr><td>Backend</td><td>Lightweight web server (confirmed with trust IT)</td><td>Can run on existing trust infrastructure or small dedicated server on ward network</td></tr>
+          <tr><td>Database</td><td>Simple relational DB (e.g. SQLite or PostgreSQL)</td><td>Low complexity, easy backup, readable logs</td></tr>
+          <tr><td>Network</td><td>Ward WiFi only — no internet required</td><td>Keeps all data within trust network</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>
