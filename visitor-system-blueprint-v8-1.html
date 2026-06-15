@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ward Visitor System — Blueprint v8</title>
+<link rel="stylesheet" href="blueprint-v8.css">
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <span class="logo">WARD VISITOR SYSTEM</span>
+    <span class="ver">Blueprint v8</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="show('overview',this)">Overview</button>
+    <button class="tab" onclick="show('kiosk',this)">Visitor Kiosk</button>
+    <button class="tab" onclick="show('staff',this)">Staff Dashboard</button>
+    <button class="tab" onclick="show('admin',this)">Ward Admin</button>
+    <button class="tab" onclick="show('rules',this)">Rules &amp; Logic</button>
+    <button class="tab" onclick="show('data',this)">Data Model</button>
+    <button class="tab" onclick="show('technical',this)">Technical</button>
+    <button class="tab" onclick="show('roadmap',this)">Roadmap</button>
+  </div>
+</nav>
+
+<!-- ═══ OVERVIEW ═══ -->
+<div id="overview" class="page active">
+  <div class="page-title">Blueprint v8 — Core System</div>
+  <div class="page-heading">Ward Visitor Management System</div>
+  <div class="page-sub">Refines v7 based on peer review: Raspberry Pi local appliance as preferred pilot architecture, first name only in data model, QR code replaces built-in feedback widget, restricted period toggle promoted to dashboard, EOL handling noted as requiring further clinical input.</div>
+
+  <div class="section">
+    <div class="section-label">Design principle</div>
+    <div class="info-note" style="font-size:13px;">The nurse at the bay is always the decision-maker. This system's only job is to make sure that decision gets triggered reliably — and that the visitor always knows their arrival has been registered, even if staff are occupied. It must add no meaningful burden to staff or visitors.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Core visitor journey</div>
+    <div class="flow scroll-x">
+      <div class="flow-node hl"><div class="fn-step">Step 1</div><div class="fn-title">Visitor Arrives</div><div class="fn-desc">Activates kiosk touchscreen at entrance door.</div></div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-node hl"><div class="fn-step">Step 2</div><div class="fn-title">Visitor Registers</div><div class="fn-desc">Enters name and bay number. Two fields. Selects language if needed.</div></div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-node crit"><div class="fn-step">Step 3 — Critical</div><div class="fn-title">Immediate Confirmation</div><div class="fn-desc">Kiosk confirms: "The ward has been notified." Before any staff action.</div></div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-node"><div class="fn-step">Step 4</div><div class="fn-title">Staff Alerted</div><div class="fn-desc">Dashboard shows new request. EOL flagged bays shown at top. Wait time escalates if ignored.</div></div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-node"><div class="fn-step">Step 5</div><div class="fn-title">Staff Acts</div><div class="fn-desc">Any staff member admits or sends a message. One tap on the dashboard.</div></div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-node"><div class="fn-step">Step 6</div><div class="fn-title">Door Opens</div><div class="fn-desc">Staff press physical button (now) or electronic release (future). Visit logged automatically.</div></div>
+    </div>
+    <div class="info-note" style="margin-top:8px;">Step 3 is the core change from the current system. The visitor receives confirmation before any staff action has occurred. They are never left without information.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">What the system is</div>
+    <div class="g3">
+      <div class="card accent"><h3>&#9312; Visitor Kiosk</h3><p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:6px;">One per entrance. Tablet in full-screen browser mode. Two inputs: name and bay number. Immediate confirmation on submission. Displays restricted period notices and staff messages. Switches to visiting-ended screen at nightly cut-off. No patient names displayed.</p></div>
+      <div class="card accent"><h3>&#9313; Staff Dashboard</h3><p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:6px;">Browser on any ward PC. Live queue of waiting visitors. Colour-coded by wait time. EOL bays flagged at top. Any staff member can act — no login required. Two actions per visitor: Admit or Send Message. Visit log accessible here.</p></div>
+      <div class="card accent"><h3>&#9314; Ward Admin Panel</h3><p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:6px;">For ward sister / nurse manager. PIN-protected. Set ward name, bed count, visiting hours (start and end time). Toggle restricted periods manually. Flag EOL bays. Edit canned messages. Configure kiosk languages. No IT support needed day to day.</p></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">What the system is not</div>
+    <div class="g2">
+      <div class="card urgent"><h3 style="color:var(--urgent);margin-bottom:10px;">Current failures addressed</h3>
+        <div class="rule-item"><div class="rule-num" style="color:var(--ok);">&#10003;</div><div class="rule-text">Visitor always gets immediate acknowledgement — never left without information</div></div>
+        <div class="rule-item"><div class="rule-num" style="color:var(--ok);">&#10003;</div><div class="rule-text">Any ward PC can receive and action a request — no single point of failure</div></div>
+        <div class="rule-item"><div class="rule-num" style="color:var(--ok);">&#10003;</div><div class="rule-text">Escalating alerts — requests that age are flagged prominently</div></div>
+        <div class="rule-item"><div class="rule-num" style="color:var(--ok);">&#10003;</div><div class="rule-text">Full timestamped log — who arrived, waited, was admitted, by whom</div></div>
+        <div class="rule-item"><div class="rule-num" style="color:var(--ok);">&#10003;</div><div class="rule-text">Nightly automatic reset — clean state each morning, no staff action needed</div></div>
+      </div>
+      <div class="card road"><h3 style="color:var(--road);margin-bottom:10px;">Deliberately out of scope — v1 <span class="road-tag">Roadmap</span></h3>
+        <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Visitor sign-out and bay capacity tracking</div></div>
+        <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Approved visitor lists and next-of-kin designation</div></div>
+        <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Unlisted visitor hold and verification flow</div></div>
+        <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Electronic door release integration</div></div>
+        <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Mobile phone notifications to visitors or staff</div></div>
+        <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Built-in feedback widget — pilot feedback collected via QR code on kiosk frame linking to a trust Microsoft Forms survey</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Pilot architecture — preferred approach</div>
+    <div class="info-note" style="font-size:13px;margin-bottom:0;"><strong>Preferred pilot architecture: self-contained ward appliance.</strong> Run the entire system on a small local server (Raspberry Pi or equivalent mini PC) with its own private WiFi network — a travel router or the Pi's own access point. The kiosk tablet and a browser tab on one ward PC connect to this private network only.<br><br>
+    This single decision dissolves the main risks flagged in earlier versions:<br><br>
+    &#10003; <strong>No NHS WiFi dependency</strong> — no captive portal problem, no trust IT negotiation for a VLAN<br>
+    &#10003; <strong>No data leaves the ward</strong> — no cloud hosting, no HTTPS/domain dependency for the pilot, no data residency question<br>
+    &#10003; <strong>IG conversation is simpler</strong> — a sealed box on the ward holding first names for a few hours is a much shorter conversation than cloud-hosted personal data<br>
+    &#10003; <strong>Total hardware cost approx £150–250</strong> — Pi/mini PC, travel router, tablet, mounts<br><br>
+    If the Pi approach proves impractical, HTTPS over NHS WiFi remains viable but requires trust IT involvement. See the Technical tab for both options.</div>
+  </div>
+</div>
+
+<!-- ═══ KIOSK ═══ -->
+<div id="kiosk" class="page">
+  <div class="page-title">Component 1</div>
+  <div class="page-heading">Visitor Kiosk</div>
+  <div class="page-sub">One per entrance. Full-screen browser on a wall-mounted tablet. The visitor's only interface. Pilot feedback collected via QR code on the kiosk frame — no built-in widget required.</div>
+
+  <div class="g2">
+    <div>
+      <h3 style="margin-bottom:12px;">State 1 — Ready for input</h3>
+      <div class="screen-wrap">
+        <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">kiosk · entrance A · idle</span></div>
+        <div class="screen-body">
+          <div class="kiosk">
+            <div class="k-ward">HDU / ITU · Entrance A</div>
+            <div class="k-heading">Welcome</div>
+            <div class="k-sub">Please register your arrival</div>
+            <span class="k-label">Your first name</span>
+            <div class="k-input" style="color:#8a8a8a;font-style:italic;">e.g. Sarah</div>
+            <span class="k-label">Bay number you are visiting</span>
+            <div class="k-input" style="color:#8a8a8a;font-style:italic;">e.g. 12</div>
+            <div class="k-btn">Notify the ward &#8594;</div>
+            <div class="k-langs">
+              <div class="k-lang active">English</div>
+              <div class="k-lang">Polski</div>
+              <div class="k-lang">Romana</div>
+              <div class="k-lang">Urdu</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:12px;">State 2 — Confirmed</h3>
+      <div class="screen-wrap">
+        <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">kiosk · entrance A · confirmed</span></div>
+        <div class="screen-body">
+          <div class="kiosk">
+            <div class="k-ward">HDU / ITU · Entrance A</div>
+            <div class="k-heading">Thank you, Sarah</div>
+            <div class="k-sub">Bay 12 · HDU</div>
+            <div class="k-confirm">&#10003; The ward has been notified of your arrival.<br><br>Please take a seat. A member of staff will be with you shortly.</div>
+            <div style="margin-top:14px;padding:10px;background:rgba(255,255,255,0.07);border-radius:5px;font-size:11px;color:#b8b8b8;text-align:center;line-height:1.6;">If you have been waiting more than 15 minutes, press the button below to send a reminder to the ward.</div>
+            <div class="k-reminder-btn">Send a reminder &#8594;</div>
+            <div style="margin-top:12px;padding:10px;background:rgba(255,255,255,0.04);border-radius:5px;font-size:11px;color:#8a8a8a;text-align:center;line-height:1.5;">&#128247; Pilot feedback? Scan the QR code on the kiosk frame.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div>
+      <h3 style="margin-bottom:12px;">State 3 — Restricted period active</h3>
+      <div class="screen-wrap">
+        <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">kiosk · entrance A · restricted period</span></div>
+        <div class="screen-body">
+          <div class="kiosk">
+            <div class="k-ward">HDU / ITU · Entrance A</div>
+            <div class="k-heading" style="color:#fbbf24;">Ward Round in Progress</div>
+            <div class="k-sub">Visiting is temporarily paused</div>
+            <div class="k-warn-box">Visiting will resume at approximately<br><strong style="font-size:20px;display:block;margin-top:4px;">10:30</strong></div>
+            <div style="margin-top:14px;padding:10px;background:rgba(255,255,255,0.07);border-radius:5px;font-size:11px;color:#b8b8b8;text-align:center;line-height:1.6;">You may register now. Staff will admit you when the round is complete.</div>
+            <span class="k-label" style="margin-top:14px;display:block;">Your first name</span>
+            <div class="k-input" style="color:#8a8a8a;font-style:italic;">e.g. Sarah</div>
+            <span class="k-label">Bay number</span>
+            <div class="k-input" style="color:#8a8a8a;font-style:italic;">e.g. 12</div>
+            <div class="k-btn warn-btn">Join the waiting list &#8594;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:12px;">State 4 — Visiting hours ended</h3>
+      <div class="screen-wrap">
+        <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">kiosk · entrance A · visiting ended</span></div>
+        <div class="screen-body">
+          <div class="kiosk">
+            <div class="k-ward">HDU / ITU · Entrance A</div>
+            <div class="k-heading" style="color:#fbbf24;">Visiting Hours Have Ended</div>
+            <div class="k-sub">Thank you for visiting today</div>
+            <div class="k-warn-box">Visiting on this ward has ended for today.<br><br><strong>Visiting hours resume tomorrow morning.</strong></div>
+            <div style="margin-top:14px;padding:10px;background:rgba(255,255,255,0.07);border-radius:5px;font-size:11px;color:#b8b8b8;text-align:center;line-height:1.6;">For urgent contact with a patient please telephone the ward directly.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-top:8px;">
+    <div>
+      <h3 style="margin-bottom:12px;">State 2b — Message from staff</h3>
+      <div class="screen-wrap">
+        <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">kiosk · entrance A · staff message</span></div>
+        <div class="screen-body">
+          <div class="kiosk">
+            <div class="k-ward">HDU / ITU · Entrance A</div>
+            <div class="k-heading">Message from the Ward</div>
+            <div class="k-sub">For: Sarah Jones · Bay 12</div>
+            <div class="k-msg-box">"We are with your relative at the moment. Please wait — we will come to you in approximately 10 minutes."<br><br><span style="font-size:11px;color:#b8b8b8;">Sent at 14:32</span></div>
+            <div class="k-confirm" style="margin-top:14px;">&#10003; Your arrival is still registered. Please remain seated.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:center;">
+      <div class="card">
+        <h3 style="margin-bottom:10px;">Kiosk design principles</h3>
+        <div class="rule-item"><div class="rule-num">&#10003;</div><div class="rule-text"><strong>Two inputs only</strong> — first name and bay number. Nothing else asked of the visitor.</div></div>
+        <div class="rule-item"><div class="rule-num">&#10003;</div><div class="rule-text"><strong>Immediate confirmation</strong> — screen updates before any staff action.</div></div>
+        <div class="rule-item"><div class="rule-num">&#10003;</div><div class="rule-text"><strong>First name only stored</strong> — enough for staff to address the visitor and personalise messages. No surnames. Bay number is the only link to a patient.</div></div>
+        <div class="rule-item"><div class="rule-num">&#10003;</div><div class="rule-text"><strong>Language selection</strong> — visitor-initiated, persists for the session.</div></div>
+        <div class="rule-item"><div class="rule-num">&#10003;</div><div class="rule-text"><strong>Large text, simple language</strong> — accessible to distressed or unfamiliar users.</div></div>
+        <div class="rule-item"><div class="rule-num">&#10003;</div><div class="rule-text"><strong>Auto-resets after inactivity</strong> — ready for the next visitor without staff intervention.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ STAFF DASHBOARD ═══ -->
+<div id="staff" class="page">
+  <div class="page-title">Component 2</div>
+  <div class="page-heading">Staff Dashboard</div>
+  <div class="page-sub">Browser on any ward PC. No login. No new workflow — it sits open on a screen and staff glance at it. One tap to admit. One tap to send a message. Restricted period toggle is on the dashboard itself — no need to go to the admin panel during a ward round.</div>
+
+  <div class="screen-wrap">
+    <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">staff-dashboard · HDU/ITU · Mon 09:47</span></div>
+    <div class="screen-body">
+
+      <div class="dash-header">
+        <span class="dh-ward">HDU / ITU — Visitor Management</span>
+        <div class="dh-meta">
+          <div style="background:var(--warn-light);border:1px solid var(--warn);border-radius:5px;padding:5px 12px;display:flex;align-items:center;gap:8px;cursor:default;">
+            <span style="font-size:11px;font-weight:600;color:var(--warn);font-family:'DM Mono',monospace;letter-spacing:0.04em;">&#9888; WARD ROUND ACTIVE</span>
+            <span style="font-size:10px;color:var(--warn);border:1px solid rgba(146,88,10,0.4);border-radius:3px;padding:1px 6px;font-family:'DM Mono',monospace;">Clear &#10005;</span>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 12px;cursor:default;">
+            <span style="font-size:11px;font-weight:600;color:var(--ink-dim);font-family:'DM Mono',monospace;letter-spacing:0.04em;">&#9632; Pause visiting</span>
+          </div>
+          <span class="dh-time">Mon 09:47</span>
+        </div>
+      </div>
+
+      <div class="g4" style="margin-bottom:16px;">
+        <div class="stat-box"><span class="stat-num urgent">3</span><span class="stat-label">Waiting at entrance</span></div>
+        <div class="stat-box"><span class="stat-num eol">1</span><span class="stat-label">EOL bay flagged</span></div>
+        <div class="stat-box"><span class="stat-num" style="color:var(--warn);">22m</span><span class="stat-label">Longest wait</span></div>
+        <div class="stat-box"><span class="stat-num" style="color:var(--ink-dim);font-size:20px;">21:00</span><span class="stat-label">Visiting ends tonight</span></div>
+      </div>
+
+      <h3 style="margin-bottom:10px;">Waiting at Entrance</h3>
+
+      <div class="visitor-card eol-vc">
+        <div class="vc-indicator purple"></div>
+        <div class="vc-body">
+          <div class="vc-name">Margaret &amp; David Collins</div>
+          <div class="vc-detail"><span class="badge eol">EOL</span> Bay 7 · ITU · Entrance B</div>
+        </div>
+        <div class="vc-wait" style="color:var(--eol);">3m</div>
+        <div class="vc-actions"><div class="vc-btn eol-admit">Admit now</div></div>
+      </div>
+
+      <div class="visitor-card waiting-long">
+        <div class="vc-indicator red"></div>
+        <div class="vc-body">
+          <div class="vc-name">James Okafor <span style="font-size:11px;color:var(--urgent);font-weight:600;">· Reminder sent</span></div>
+          <div class="vc-detail"><span class="badge itu">ITU</span> Bay 3 · Entrance A</div>
+        </div>
+        <div class="vc-wait red">22m</div>
+        <div class="vc-actions"><div class="vc-btn admit">Admit</div><div class="vc-btn msg">Message</div></div>
+      </div>
+
+      <div class="visitor-card">
+        <div class="vc-indicator green"></div>
+        <div class="vc-body">
+          <div class="vc-name">Priya Sharma</div>
+          <div class="vc-detail"><span class="badge hdu">HDU</span> Bay 14 · Entrance A</div>
+        </div>
+        <div class="vc-wait ok">4m</div>
+        <div class="vc-actions"><div class="vc-btn admit">Admit</div><div class="vc-btn msg">Message</div></div>
+      </div>
+
+      <div class="compose-area" style="margin-top:16px;">
+        <h3 style="font-size:12px;margin-bottom:10px;">Send Message to Visitor at Kiosk</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="msg-pill">"Please wait — we will be with you shortly"</div>
+          <div class="msg-pill">"Ward round in progress — approx 20 min"</div>
+          <div class="msg-pill">"Please wait — we are with your relative"</div>
+          <div class="msg-pill" style="border-style:dashed;color:var(--accent);">+ Custom message</div>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom:10px;margin-top:20px;">Bay Overview — HDU</h3>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--surface);border:1px solid var(--border);"></div> No visitor waiting</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--ok-light);border:1px solid var(--ok);"></div> Visitor admitted today</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--warn-light);border:1px solid var(--warn);"></div> Visitor waiting</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--eol-light);border:1px solid var(--eol);"></div> EOL flagged</div>
+      </div>
+      <div class="bed-grid">
+        <div class="bed-cell"><div class="bn">01</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">02</div><div class="bs">—</div></div>
+        <div class="bed-cell vadmit"><div class="bn">03</div><div class="bs">admitted</div></div>
+        <div class="bed-cell"><div class="bn">04</div><div class="bs">—</div></div>
+        <div class="bed-cell vadmit"><div class="bn">05</div><div class="bs">admitted</div></div>
+        <div class="bed-cell"><div class="bn">06</div><div class="bs">—</div></div>
+        <div class="bed-cell veol"><div class="bn">07</div><div class="bs">EOL</div></div>
+        <div class="bed-cell"><div class="bn">08</div><div class="bs">—</div></div>
+        <div class="bed-cell vw"><div class="bn">09</div><div class="bs">waiting</div></div>
+        <div class="bed-cell"><div class="bn">10</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">11</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">12</div><div class="bs">—</div></div>
+        <div class="bed-cell vadmit"><div class="bn">13</div><div class="bs">admitted</div></div>
+        <div class="bed-cell vw"><div class="bn">14</div><div class="bs">waiting</div></div>
+        <div class="bed-cell"><div class="bn">15</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">16</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">17</div><div class="bs">—</div></div>
+        <div class="bed-cell"><div class="bn">18</div><div class="bs">—</div></div>
+        <div class="bed-cell vadmit"><div class="bn">19</div><div class="bs">admitted</div></div>
+        <div class="bed-cell"><div class="bn">20</div><div class="bs">—</div></div>
+      </div>
+
+    </div>
+  </div>
+  <div class="note"><strong>Bay overview note:</strong> In v1 the bay grid shows whether a visitor has been admitted today — not whether they are currently present. Actual occupancy is managed by staff judgement as at present. Real-time occupancy tracking is on the roadmap.</div>
+  <div class="note"><strong>Door release:</strong> The Admit button prompts staff to press the physical button at the door. Electronic integration is on the roadmap.</div>
+</div>
+
+<!-- ═══ ADMIN ═══ -->
+<div id="admin" class="page">
+  <div class="page-title">Component 3</div>
+  <div class="page-heading">Ward Admin Panel</div>
+  <div class="page-sub">PIN-protected. Used by ward sister or nurse manager. Configures the entire ward. No IT support needed for day-to-day use. Changes take effect immediately on kiosks and dashboard.</div>
+
+  <div class="g2">
+    <div>
+      <div class="section-label">Ward setup</div>
+      <div class="form-section">
+        <h3 style="margin-bottom:14px;">Ward Identity</h3>
+        <div class="form-row"><span class="form-label">Ward name (shown on kiosk)</span><input class="form-input filled" value="HDU / ITU" readonly></div>
+        <div class="form-row"><span class="form-label">Number of bays</span><input class="form-input filled" value="25 HDU · 25 ITU" readonly><div class="form-hint">Used to validate bay numbers entered by visitors</div></div>
+        <div class="form-row"><span class="form-label">Number of entrances</span><input class="form-input filled" value="2 (Entrance A · Entrance B)" readonly></div>
+      </div>
+
+      <div class="form-section">
+        <h3 style="margin-bottom:14px;">Visiting Hours</h3>
+        <p style="font-size:12px;color:var(--ink-dim);margin-bottom:14px;line-height:1.6;">Set once. Applied automatically every day. Kiosk switches states at these times with no staff action required.</p>
+        <div class="form-row">
+          <span class="form-label">Visiting starts</span>
+          <input class="form-input filled" value="10:00" style="width:120px;" readonly>
+          <div class="form-hint">Kiosk switches from visiting-ended to arrival screen</div>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Visiting ends (nightly cut-off)</span>
+          <input class="form-input filled" value="21:00" style="width:120px;" readonly>
+          <div class="form-hint">All active sessions closed. Bay counts reset. Kiosk switches to visiting-ended screen. Visit log retained.</div>
+        </div>
+        <div class="form-btn primary">Save visiting hours</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Restricted periods &amp; EOL flags</div>
+      <div class="form-section">
+        <h3 style="margin-bottom:14px;">Restricted Periods</h3>
+        <p style="font-size:12px;color:var(--ink-dim);margin-bottom:14px;line-height:1.6;">Set manually when needed — ward rounds, handover, or any clinical need. Kiosk updates immediately. Clear when done.</p>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Ward round active</div><div class="toggle-sub">Pauses admissions · visitors can still register and queue</div></div>
+          <div class="toggle-switch on"></div>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Handover in progress</div><div class="toggle-sub">Same behaviour as ward round</div></div>
+          <div class="toggle-switch off"></div>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Ward closed to visitors</div><div class="toggle-sub">Clinical emergency — kiosk shows closure notice only</div></div>
+          <div class="toggle-switch off"></div>
+        </div>
+        <div style="margin-top:12px;">
+          <span class="form-label">Estimated resumption time (shown on kiosk)</span>
+          <input class="form-input" value="10:30" style="width:120px;">
+          <div class="form-hint">Leave blank to show "time not yet known"</div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3 style="margin-bottom:10px;">EOL Bay Flags</h3>
+        <p style="font-size:12px;color:var(--ink-dim);margin-bottom:12px;line-height:1.6;">Flagged bays appear at the top of the visitor queue. Staff exercise their own judgement.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <div class="badge eol" style="padding:5px 10px;font-size:11px;">Bay 7 ITU &#10005;</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input class="form-input" placeholder="Bay number" style="width:100px;">
+          <select class="form-input" style="width:80px;"><option>ITU</option><option>HDU</option></select>
+          <div class="form-btn eol-btn">Flag EOL</div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3 style="margin-bottom:10px;">Canned Messages</h3>
+        <p style="font-size:12px;color:var(--ink-dim);margin-bottom:12px;line-height:1.6;">Staff send these to the visitor kiosk with one tap.</p>
+        <div style="margin-bottom:10px;">
+          <div class="msg-pill">"Please wait — we will be with you shortly" <span style="color:var(--urgent);font-size:10px;">&#10005;</span></div>
+          <div class="msg-pill">"Ward round in progress — approx 20 min" <span style="color:var(--urgent);font-size:10px;">&#10005;</span></div>
+          <div class="msg-pill">"Please wait — we are with your relative" <span style="color:var(--urgent);font-size:10px;">&#10005;</span></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input class="form-input" placeholder="New message..." style="flex:1;">
+          <div class="form-btn primary">Add</div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3 style="margin-bottom:10px;">Kiosk Languages</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <div class="badge ok" style="padding:5px 10px;font-size:11px;">English &#10003;</div>
+          <div class="badge hdu" style="padding:5px 10px;font-size:11px;">Polski &#10003;</div>
+          <div class="badge hdu" style="padding:5px 10px;font-size:11px;">Romana &#10003;</div>
+          <div class="badge" style="padding:5px 10px;font-size:11px;background:var(--surface2);color:var(--ink-faint);">+ Add language</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Access log</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Time</th><th>Visitor</th><th>Bay</th><th>Ward</th><th>Entrance</th><th>Wait</th><th>Status</th><th>Actioned by</th></tr></thead>
+        <tbody>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">09:12</td><td>James O.</td><td>3</td><td><span class="badge itu">ITU</span></td><td>A</td><td style="color:var(--urgent);font-weight:600;">22m</td><td><span class="badge urgent">Waiting</span></td><td>—</td></tr>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">09:31</td><td>Priya S.</td><td>14</td><td><span class="badge hdu">HDU</span></td><td>A</td><td>4m</td><td><span class="badge warn">Waiting</span></td><td>—</td></tr>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">08:55</td><td>Margaret &amp; David</td><td>7</td><td><span class="badge itu">ITU</span></td><td>B</td><td>3m</td><td><span class="badge eol">EOL waiting</span></td><td>—</td></tr>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">08:30</td><td>Fatima A.</td><td>5</td><td><span class="badge hdu">HDU</span></td><td>A</td><td>6m</td><td><span class="badge ok">Admitted</span></td><td>B. Okonjo</td></tr>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">08:15</td><td>Tom W.</td><td>5</td><td><span class="badge hdu">HDU</span></td><td>A</td><td>3m</td><td><span class="badge ok">Admitted</span></td><td>B. Okonjo</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RULES ═══ -->
+<div id="rules" class="page">
+  <div class="page-title">System Logic</div>
+  <div class="page-heading">Rules &amp; Logic</div>
+  <div class="page-sub">Simple by design. The fewer rules the system enforces, the less it can get in the way.</div>
+
+  <div class="section">
+    <div class="section-label">Core rules</div>
+    <div class="rule-item"><div class="rule-num">&#9312;</div><div class="rule-text"><strong>No visitor is ever left without acknowledgement.</strong> The kiosk confirms receipt immediately on submission, before any staff action has occurred.</div></div>
+    <div class="rule-item"><div class="rule-num">&#9313;</div><div class="rule-text"><strong>Any staff member can act on any request.</strong> The dashboard is open on all ward PCs. No login. No assigned responsibility. The queue is shared.</div></div>
+    <div class="rule-item"><div class="rule-num">&#9314;</div><div class="rule-text"><strong>The nurse at the bay makes all admission decisions.</strong> The system surfaces the request. It does not enforce or automate the decision.</div></div>
+    <div class="rule-item"><div class="rule-num">&#9315;</div><div class="rule-text"><strong>Restricted periods pause admissions but not registration.</strong> Visitors can still register during a ward round. They are queued and admitted when the period ends.</div></div>
+    <div class="rule-item"><div class="rule-num">&#9316;</div><div class="rule-text"><strong>EOL-flagged bays are shown at the top of the queue.</strong> Staff exercise their own judgement entirely. The system flags and prioritises — it does not change the interaction in any other way. <em>Further EOL-specific design requires input from clinical staff with current HDU/ITU experience. Existing ward practices for EOL visitors should not be disrupted by this system.</em></div></div>
+    <div class="rule-item"><div class="rule-num">&#9317;</div><div class="rule-text"><strong>Nightly reset is automatic.</strong> At the configured cut-off time, all active sessions are closed and bay counts reset. Kiosk switches to visiting-ended screen. Visit log is retained. No staff action needed.</div></div>
+    <div class="rule-item"><div class="rule-num">&#9318;</div><div class="rule-text"><strong>Visiting resumes automatically</strong> at the configured start time. Kiosk switches back to the arrival screen. No staff action needed.</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Escalation — wait time thresholds</div>
+    <div class="card" style="margin-bottom:14px;">
+      <table>
+        <thead><tr><th>Wait time</th><th>Kiosk</th><th>Dashboard card</th></tr></thead>
+        <tbody>
+          <tr><td>0 – 5 min</td><td>Green — "Ward notified"</td><td>Green</td></tr>
+          <tr><td>5 – 15 min</td><td>Green — "Please continue to wait"</td><td>Amber</td></tr>
+          <tr><td>15+ min</td><td>Amber — reminder button appears</td><td>Red — prominent</td></tr>
+          <tr><td>Visitor presses reminder</td><td>Confirms reminder sent</td><td>Reminder flag added to card</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">Thresholds (5 min / 15 min) are proposals. Should be agreed with ward staff before build and made configurable in the admin panel.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Outstanding items before build</div>
+    <div class="card urgent">
+      <table>
+        <thead><tr><th>#</th><th>Item</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td>Electronic door integration feasibility (estates / IT)</td><td>Determines whether Admit triggers door release or prompts manual button press</td></tr>
+          <tr><td>B</td><td>Confirm wait time thresholds with ward staff</td><td>Should reflect realistic expectations</td></tr>
+          <tr><td>C</td><td>Languages needed on kiosk beyond English</td><td>Translation work required before go-live</td></tr>
+          <tr><td>D</td><td>Information governance review</td><td>System stores visitor names and bay numbers — trust sign-off required</td></tr>
+          <tr><td>E</td><td>Hardware — tablet or screen at each entrance</td><td>Procurement and installation</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DATA ═══ -->
+<div id="data" class="page">
+  <div class="page-title">Technical</div>
+  <div class="page-heading">Data Model</div>
+  <div class="page-sub">Minimal by design. No patient names stored. Bay number is the only link between visitor and patient location.</div>
+
+  <div class="g2">
+    <div>
+      <div class="section-label">Visit record</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>visit_id</td><td>UUID</td><td>Auto-generated</td></tr>
+            <tr><td>visitor_first_name</td><td>String</td><td>First name only — entered by visitor</td></tr>
+            <tr><td>bay_number</td><td>Integer</td><td>Validated against ward config</td></tr>
+            <tr><td>ward</td><td>String</td><td>Configured per deployment</td></tr>
+            <tr><td>entrance</td><td>Enum</td><td>A / B — from kiosk source</td></tr>
+            <tr><td>arrived_at</td><td>Timestamp</td><td>On form submission</td></tr>
+            <tr><td>admitted_at</td><td>Timestamp</td><td>On staff admit action</td></tr>
+            <tr><td>session_closed_at</td><td>Timestamp</td><td>On nightly reset — if not already admitted</td></tr>
+            <tr><td>status</td><td>Enum</td><td>waiting / admitted / departed / reset</td></tr>
+            <tr><td>actioned_by</td><td>String</td><td>Staff name — free text</td></tr>
+            <tr><td>reminder_sent</td><td>Boolean</td><td>Visitor pressed reminder</td></tr>
+            <tr><td>messages</td><td>Array</td><td>Staff messages sent to kiosk</td></tr>
+            <tr><td>language</td><td>String</td><td>Visitor's selected language</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Ward state</div>
+      <div class="card" style="margin-bottom:16px;">
+        <table>
+          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>ward_name</td><td>String</td><td>Configured in admin</td></tr>
+            <tr><td>visiting_start_time</td><td>Time</td><td>Daily automatic — kiosk reopens</td></tr>
+            <tr><td>visiting_end_time</td><td>Time</td><td>Daily automatic — session reset</td></tr>
+            <tr><td>visiting_active</td><td>Boolean</td><td>Controls kiosk state</td></tr>
+            <tr><td>restricted_period_active</td><td>Boolean</td><td>Set manually — cleared by reset</td></tr>
+            <tr><td>restriction_type</td><td>Enum</td><td>round / handover / emergency</td></tr>
+            <tr><td>resume_time</td><td>Time</td><td>Optional — displayed on kiosk</td></tr>
+            <tr><td>entrances</td><td>Array</td><td>Configured in admin</td></tr>
+            <tr><td>languages</td><td>Array</td><td>Active kiosk languages</td></tr>
+            <tr><td>canned_messages</td><td>Array</td><td>Editable in admin</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-label">Bay record</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>bay_id</td><td>Integer</td><td>Configured per ward</td></tr>
+            <tr><td>ward</td><td>String</td><td></td></tr>
+            <tr><td>eol_flag</td><td>Boolean</td><td>Set/cleared by senior staff</td></tr>
+            <tr><td>visitor_admitted_today</td><td>Boolean</td><td>Resets nightly — for bay grid display only</td></tr>
+            <tr><td>active</td><td>Boolean</td><td>Bed occupied</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Privacy note</div>
+    <div class="info-note"><strong>First name only.</strong> The system stores visitor first names and bay numbers only. No surnames, no patient names, no clinical information. Bay number is the sole link to patient location. Storing first names only rather than full names meaningfully reduces IG weight — a system holding first names for hours on an air-gapped ward device is low-risk personal data processing. A DPIA may still be required — confirm with the trust's IG team.</div>
+  </div>
+</div>
+
+<!-- ═══ TECHNICAL ═══ -->
+<div id="technical" class="page">
+  <div class="page-title">Architecture</div>
+  <div class="page-heading">Technical Architecture</div>
+  <div class="page-sub">How the system is built, hosted, and deployed. Designed to be as simple as possible while remaining secure and maintainable by trust IT.</div>
+
+  <div class="section">
+    <div class="section-label">File structure</div>
+    <div class="g2">
+      <div class="card">
+        <h3 style="margin-bottom:12px;">Frontend — what the browser loads</h3>
+        <table>
+          <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td style="font-family:'DM Mono',monospace;">kiosk.html</td><td>Visitor-facing entrance screen. Runs full-screen on tablets.</td></tr>
+            <tr><td style="font-family:'DM Mono',monospace;">dashboard.html</td><td>Staff view. Runs in browser on ward PCs.</td></tr>
+            <tr><td style="font-family:'DM Mono',monospace;">admin.html</td><td>Ward admin panel. PIN-protected route.</td></tr>
+            <tr><td style="font-family:'DM Mono',monospace;">style.css</td><td>Shared styles for all views.</td></tr>
+            <tr><td style="font-family:'DM Mono',monospace;">app.js</td><td>Shared frontend logic — form submission, WebSocket handling, real-time updates.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;">Backend — what runs on the server</h3>
+        <table>
+          <thead><tr><th>File / component</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td style="font-family:'DM Mono',monospace;">server.js</td><td>Node.js + Express. Handles HTTP requests and WebSocket connections.</td></tr>
+            <tr><td style="font-family:'DM Mono',monospace;">routes/</td><td>API endpoints — visitor registration, admit, message, feedback.</td></tr>
+            <tr><td style="font-family:'DM Mono',monospace;">db.js</td><td>Database connection and queries (SQLite for pilot).</td></tr>
+            <tr><td style="font-family:'DM Mono',monospace;">scheduler.js</td><td>Cron jobs — nightly reset, visiting hours start/end.</td></tr>
+            <tr><td style="font-family:'DM Mono',monospace;">ward.db</td><td>SQLite database file. Single file — easy to back up.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="info-note">No heavy frameworks needed. Vanilla JS on the frontend. Node.js + Express on the backend. Socket.io for real-time updates. This stack is widely understood, easy to hand over to trust IT, and has no licensing cost.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Hosting — pilot vs production</div>
+    <div class="g2">
+      <div class="card ok">
+        <h3 style="margin-bottom:12px;">Pilot hosting — preferred: ward appliance</h3>
+        <div class="security-row">
+          <div class="security-icon">&#9312;</div>
+          <div class="security-body">
+            <div class="security-title">Raspberry Pi or mini PC on the ward</div>
+            <div class="security-desc">Runs Node.js locally. Serves the app to kiosk tablet and ward PC over its own private WiFi network (travel router or Pi access point). Nothing touches NHS WiFi or the internet. All data stays physically inside the locked ward.</div>
+          </div>
+          <div class="security-status ok">Preferred</div>
+        </div>
+        <div class="security-row">
+          <div class="security-icon">&#9313;</div>
+          <div class="security-body">
+            <div class="security-title">Private SSID — no captive portal</div>
+            <div class="security-desc">The Pi or travel router creates its own WiFi network. Kiosk tablets connect automatically with no sign-in page. No trust IT involvement needed for the network itself.</div>
+          </div>
+          <div class="security-status ok">Clean solution</div>
+        </div>
+        <div class="security-row">
+          <div class="security-icon">&#9314;</div>
+          <div class="security-body">
+            <div class="security-title">Approx hardware cost: £150–250</div>
+            <div class="security-desc">Pi 4 or mini PC (~£60–100), travel router (~£25–40), tablet (~£80–120), mounts and cables (~£20). One-off cost. No ongoing hosting fees.</div>
+          </div>
+          <div class="security-status ok">Low cost</div>
+        </div>
+        <div class="security-row">
+          <div class="security-icon">&#9315;</div>
+          <div class="security-body">
+            <div class="security-title">Fallback: VPS over NHS WiFi</div>
+            <div class="security-desc">If the Pi approach is impractical, a small UK-based VPS (~£5–10/month) with HTTPS via Let's Encrypt works over NHS WiFi. Requires captive portal testing and raises the IG conversation about data leaving the building.</div>
+          </div>
+          <div class="security-status warn">Fallback only</div>
+        </div>
+      </div>
+      <div class="card accent">
+        <h3 style="margin-bottom:12px;">Production hosting — longer term</h3>
+        <div class="security-row">
+          <div class="security-icon">&#9312;</div>
+          <div class="security-body">
+            <div class="security-title">Trust-hosted infrastructure</div>
+            <div class="security-desc">The correct long-term answer. Trust IT hosts the server on internal infrastructure or an NHS-approved cloud platform. Longer to arrange but keeps everything within trust governance.</div>
+          </div>
+          <div class="security-status req">For production</div>
+        </div>
+        <div class="security-row">
+          <div class="security-icon">&#9313;</div>
+          <div class="security-body">
+            <div class="security-title">NHS-accredited cloud (e.g. N3 / HSCN)</div>
+            <div class="security-desc">NHS has approved cloud platforms. Trust IT will know which apply. Required for any system handling patient-adjacent data at scale.</div>
+          </div>
+          <div class="security-status req">For production</div>
+        </div>
+        <div class="security-row">
+          <div class="security-icon">&#9314;</div>
+          <div class="security-body">
+            <div class="security-title">GitHub / personal web hosting</div>
+            <div class="security-desc">GitHub Pages is static-only — cannot run a backend. Personal hosting is not appropriate for patient-adjacent data even in a pilot.</div>
+          </div>
+          <div class="security-status req">Not suitable</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Network &amp; WiFi security</div>
+    <div class="card">
+      <div class="security-row">
+        <div class="security-icon">&#9888;</div>
+        <div class="security-body">
+          <div class="security-title">Open NHS hospital WiFi — public network</div>
+          <div class="security-desc">Anyone on the same network can see unencrypted traffic. HTTPS mitigates this for data in transit. However the staff dashboard on a public network is a concern — visitor names and bay numbers are visible on screen and in transit.</div>
+        </div>
+        <div class="security-status warn">Needs resolution</div>
+      </div>
+      <div class="security-row">
+        <div class="security-icon">&#9312;</div>
+        <div class="security-body">
+          <div class="security-title">Kiosk tablets on open WiFi</div>
+          <div class="security-desc">Acceptable for the pilot. Tablets submit name and bay number and receive confirmation. HTTPS encrypts this. Risk is low.</div>
+        </div>
+        <div class="security-status ok">Acceptable for pilot</div>
+      </div>
+      <div class="security-row">
+        <div class="security-icon">&#9313;</div>
+        <div class="security-body">
+          <div class="security-title">Staff dashboard on open WiFi</div>
+          <div class="security-desc">Higher risk. Ideally accessed from trust staff WiFi or wired network. Worth raising with trust IT before pilot begins.</div>
+        </div>
+        <div class="security-status warn">Raise with IT</div>
+      </div>
+      <div class="security-row">
+        <div class="security-icon">&#9314;</div>
+        <div class="security-body">
+          <div class="security-title">Captive portal on NHS WiFi</div>
+          <div class="security-desc">Open NHS WiFi often requires a sign-in page. Tablets in kiosk mode may not handle this automatically — they may get stuck on the sign-in page rather than the kiosk app. Needs testing before pilot. A dedicated ward VLAN or network would solve this cleanly.</div>
+        </div>
+        <div class="security-status req">Test before pilot</div>
+      </div>
+      <div class="security-row">
+        <div class="security-icon">&#9315;</div>
+        <div class="security-body">
+          <div class="security-title">HTTPS — mandatory</div>
+          <div class="security-desc">All traffic between browser and server must be encrypted. Free via Let's Encrypt. Non-negotiable regardless of network used.</div>
+        </div>
+        <div class="security-status req">Mandatory</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Deployment steps — pilot</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>#</th><th>Step</th><th>Who</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Procure a UK VPS with Node.js support</td><td>Developer</td><td>DigitalOcean, Hetzner, or equivalent. ~£5–10/month.</td></tr>
+          <tr><td>2</td><td>Set up HTTPS with Let's Encrypt</td><td>Developer</td><td>Free. Requires a domain name pointed at the server.</td></tr>
+          <tr><td>3</td><td>Deploy application code</td><td>Developer</td><td>Via GitHub repository — push to server.</td></tr>
+          <tr><td>4</td><td>Configure ward settings</td><td>Developer + ward sister</td><td>Ward name, bay count, visiting hours, languages.</td></tr>
+          <tr><td>5</td><td>Install and configure kiosk tablets</td><td>Developer + ward staff</td><td>Browser in kiosk mode, pointed at kiosk URL. Test WiFi connection.</td></tr>
+          <tr><td>6</td><td>Brief ward staff on dashboard</td><td>Developer + matron</td><td>One-page guide. Dashboard URL bookmarked on ward PCs.</td></tr>
+          <tr><td>7</td><td>Notify trust IT and IG</td><td>Matron / sponsor</td><td>Before go-live — even for a limited pilot.</td></tr>
+          <tr><td>8</td><td>Go live — monitor and collect feedback</td><td>All</td><td>Pilot feedback widget active on kiosk and dashboard.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ROADMAP ═══ -->
+<div id="roadmap" class="page">
+  <div class="page-title">Future Phases</div>
+  <div class="page-heading">Roadmap</div>
+  <div class="page-sub">Features deliberately excluded from v1 to keep the core system simple and deliverable. Each is well-understood from the design process and can be added once the core system is stable and trusted by staff.</div>
+
+  <div class="section">
+    <div class="section-label">Phase 2 — Visitor management</div>
+    <div class="g2">
+      <div class="card road">
+        <h3 style="color:var(--road);">Visitor Sign-Out <span class="road-tag">Phase 2</span></h3>
+        <p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:8px;margin-bottom:12px;">Visitor taps "I am leaving" on the kiosk on departure. Records departure time. Staff can manually clear a visitor from the dashboard.</p>
+        <div class="rule-item road"><div class="rule-num">!</div><div class="rule-text">Known problem: visitors stepping out temporarily who forget to sign out will be locked out on return, requiring staff intervention. This must be solved before sign-out can gate bay capacity.</div></div>
+      </div>
+      <div class="card road">
+        <h3 style="color:var(--road);">Real-Time Bay Capacity Tracking <span class="road-tag">Phase 2</span></h3>
+        <p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:8px;margin-bottom:12px;">System enforces maximum 2 visitors per bay in real time. Depends on reliable sign-out. Bay grid on dashboard shows live occupancy rather than "admitted today".</p>
+        <div class="rule-item road"><div class="rule-num">!</div><div class="rule-text">Cannot be reliably implemented without sign-out. Premature enforcement creates more staff interruptions than it saves.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Phase 3 — Access control</div>
+    <div class="g2">
+      <div class="card road">
+        <h3 style="color:var(--road);">Approved Visitor Lists <span class="road-tag">Phase 3</span></h3>
+        <p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:8px;margin-bottom:12px;">Per-patient list of approved visitors, built at the bedside by patient or next of kin with nursing assistance. One designated next of kin. Unlisted visitors held pending verification. Ward sister / nurse manager has override authority. List moves with the patient. Deleted on discharge.</p>
+        <div class="rule-item road"><div class="rule-num">!</div><div class="rule-text">Requires information governance and legal review before build. Trust must clarify the distinction between next of kin and Lasting Power of Attorney, and define a patient consent process.</div></div>
+      </div>
+      <div class="card road">
+        <h3 style="color:var(--road);">Electronic Door Release Integration <span class="road-tag">Phase 3</span></h3>
+        <p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:8px;margin-bottom:12px;">Admit button on the dashboard triggers electronic release of the entrance door directly, without a staff member pressing the physical button. Requires estates and IT feasibility assessment.</p>
+        <div class="rule-item road"><div class="rule-num">!</div><div class="rule-text">Both entrance doors have electronic locks. Feasibility of network integration is unknown — requires assessment before this can be designed further.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Phase 4 — Extended reach</div>
+    <div class="g2">
+      <div class="card road">
+        <h3 style="color:var(--road);">Multi-Ward Deployment <span class="road-tag">Phase 4</span></h3>
+        <p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:8px;">The system is already designed to be configurable per ward. Deployment to additional locked wards requires only ward-specific configuration — no code changes. A trust-wide view across all wards could be added for matron-level oversight.</p>
+      </div>
+      <div class="card road">
+        <h3 style="color:var(--road);">Reporting &amp; Analytics <span class="road-tag">Phase 4</span></h3>
+        <p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:8px;">The visit log accumulates rich data over time: peak visiting hours, average wait times, frequency of long waits, busiest days. This could inform staffing decisions and ward management. Requires only a reporting view on top of the existing log.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="blueprint-v8.js"></script>
+</body>
+</html>
