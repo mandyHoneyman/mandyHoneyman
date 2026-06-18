@@ -28,7 +28,7 @@
 <div id="overview" class="page active">
   <div class="page-title">Blueprint v9 — Core System</div>
   <div class="page-heading">Ward Visitor Management System</div>
-  <div class="page-sub">Restructured following review by a research-level nurse (principal investigator). The dashboard moves from an open, any-staff-member model to a single coordinator role (receptionist, or a covering coordinator), reflecting standard NHS PC auto-logout and accountability practice. Adds silent bay-movement handling and an "I don't know the bay number" option. Electronic door release removed from scope entirely.</div>
+  <div class="page-sub">Refines v8 following a conversation with a research-level nurse. The dashboard moves from an open, any-staff-member model to a single coordinator role (receptionist, or a covering coordinator), reflecting standard NHS PC auto-logout and accountability practice. Adds silent bay-movement handling, an "I don't know the bay number" option, and a returning-coordinator summary so missed time at the screen is never a missed visitor. EOL handling moved to the roadmap pending clinical input. Electronic door release removed from scope entirely.</div>
 
   <div class="section">
     <div class="section-label">Design principle</div>
@@ -46,7 +46,7 @@
       <div class="flow-arrow">&#8594;</div>
       <div class="flow-node crit"><div class="fn-step">Step 3 — Critical</div><div class="fn-title">Immediate Confirmation</div><div class="fn-desc">Kiosk confirms: "The ward has been notified." No bay number echoed back. Before any staff action.</div></div>
       <div class="flow-arrow">&#8594;</div>
-      <div class="flow-node"><div class="fn-step">Step 4</div><div class="fn-title">Coordinator Alerted</div><div class="fn-desc">Dashboard shows new request with an audible alert. EOL flagged bays shown at top.</div></div>
+      <div class="flow-node"><div class="fn-step">Step 4</div><div class="fn-title">Coordinator Alerted</div><div class="fn-desc">Dashboard shows new request with an audible alert and a summary if the coordinator has just returned.</div></div>
       <div class="flow-arrow">&#8594;</div>
       <div class="flow-node"><div class="fn-step">Step 5</div><div class="fn-title">Coordinator Acts</div><div class="fn-desc">Admits, sends a message, or attends to an "unsure of bay" visitor in person.</div></div>
       <div class="flow-arrow">&#8594;</div>
@@ -59,7 +59,7 @@
     <div class="section-label">What the system is</div>
     <div class="g2">
       <div class="card accent"><h3>&#9312; Visitor Kiosk</h3><p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:6px;">One per entrance. Tablet in full-screen browser mode. Two inputs: first name and bay number — or "I don't know the bay number". Immediate confirmation on submission, with no bay number ever echoed back. Displays restricted period notices and staff messages. Switches to visiting-ended screen at nightly cut-off.</p></div>
-      <div class="card accent"><h3>&#9313; Coordinator Dashboard</h3><p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:6px;">Browser at the reception or coordinator desk. Live queue of waiting visitors with an audible alert on arrival, so a brief absence from the screen — including standard NHS auto-logout — does not mean a missed visitor. Handles admission, messaging, EOL flags, bay-movement redirects, restricted periods, and ward configuration — one screen, one role, no separate admin panel.</p></div>
+      <div class="card accent"><h3>&#9313; Coordinator Dashboard</h3><p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:6px;">Browser at the reception or coordinator desk. Live queue of waiting visitors with an audible alert on arrival, plus a returning-coordinator summary on login so a brief absence from the screen — including standard NHS auto-logout — does not mean a missed visitor. Handles admission, messaging, bay-movement redirects, restricted periods, and ward configuration — one screen, one role, no separate admin panel.</p></div>
     </div>
   </div>
 
@@ -82,6 +82,9 @@
       <div class="card road"><h3 style="color:var(--road);margin-bottom:10px;">Deliberately out of scope — v1 <span class="road-tag">Roadmap</span></h3>
         <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Visitor sign-out and bay capacity tracking</div></div>
         <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Approved visitor lists and next-of-kin designation</div></div>
+        <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">EOL bay flagging — moved off entirely pending a proper conversation with clinical staff about how this should work</div></div>
+        <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Visible waiting-visitor count on the lock/login screen itself, before credentials are entered</div></div>
+        <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Dashboard auto-scrolling or highlighting the longest-waiting visitor on login</div></div>
         <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Mobile phone notifications to visitors or staff</div></div>
         <div class="rule-item road"><div class="rule-num">&#8594;</div><div class="rule-text">Built-in feedback widget — collected via QR code on kiosk frame instead</div></div>
       </div>
@@ -244,7 +247,7 @@
 <div id="staff" class="page">
   <div class="page-title">Component 2 — merges dashboard and admin into one screen</div>
   <div class="page-heading">Coordinator Dashboard</div>
-  <div class="page-sub">Browser at the reception or coordinator desk. Used by the receptionist, or a covering coordinator when reception is unstaffed. Screen behaves like any normal NHS PC, including standard auto-logout — an audible alert covers the gap. One screen handles both day-to-day use and ward configuration; no separate admin panel or PIN screen.</div>
+  <div class="page-sub">Browser at the reception or coordinator desk. Used by the receptionist, or a covering coordinator when reception is unstaffed. Screen behaves like any normal NHS PC, including standard auto-logout — an audible alert plus a returning-coordinator summary cover the gap. One screen handles both day-to-day use and ward configuration; no separate admin panel or PIN screen.</div>
 
   <div class="screen-wrap">
     <div class="screen-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="screen-title">coordinator-dashboard · HDU/ITU · Mon 09:47</span></div>
@@ -267,24 +270,23 @@
         </div>
       </div>
 
+      <div style="background:var(--accent-light);border:2px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:12px;">
+        <span style="font-size:18px;flex-shrink:0;">&#128064;</span>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;color:var(--accent);font-family:'DM Mono',monospace;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px;">While you were away</div>
+          <div style="font-size:13px;color:var(--ink);line-height:1.6;">2 new visitors registered. Longest has been waiting <strong>14 minutes</strong>.</div>
+        </div>
+        <div style="font-size:11px;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:3px 9px;cursor:default;flex-shrink:0;">Dismiss</div>
+      </div>
+
       <div class="g4" style="margin-bottom:16px;">
         <div class="stat-box"><span class="stat-num urgent">4</span><span class="stat-label">Waiting at entrance</span></div>
-        <div class="stat-box"><span class="stat-num eol">1</span><span class="stat-label">EOL bay flagged</span></div>
+        <div class="stat-box"><span class="stat-num" style="color:var(--accent);">1</span><span class="stat-label">Bay redirect active</span></div>
         <div class="stat-box"><span class="stat-num" style="color:var(--warn);">22m</span><span class="stat-label">Longest wait</span></div>
         <div class="stat-box"><span class="stat-num" style="color:var(--ink-dim);font-size:20px;">21:00</span><span class="stat-label">Visiting ends tonight</span></div>
       </div>
 
       <h3 style="margin-bottom:10px;">Waiting at Entrance</h3>
-
-      <div class="visitor-card eol-vc">
-        <div class="vc-indicator purple"></div>
-        <div class="vc-body">
-          <div class="vc-name">Margaret &amp; David Collins</div>
-          <div class="vc-detail"><span class="badge eol">EOL</span> Bay 7 · ITU · Entrance B</div>
-        </div>
-        <div class="vc-wait" style="color:var(--eol);">3m</div>
-        <div class="vc-actions"><div class="vc-btn eol-admit">Admit now</div></div>
-      </div>
 
       <div class="visitor-card" style="border-left-color:var(--accent);background:var(--accent-light);">
         <div class="vc-indicator" style="background:var(--accent);"></div>
@@ -316,7 +318,7 @@
         <div class="vc-actions"><div class="vc-btn admit">Admit</div><div class="vc-btn msg">Message</div></div>
       </div>
 
-      <div class="note" style="margin-top:4px;"><strong>Audible alert:</strong> a sound plays on this device whenever a new visitor registers, so a coordinator who has stepped away — or whose screen has auto-logged out — still knows to come back and act, as soon as they are within earshot. This is the mechanism that makes a single-role model workable.</div>
+      <div class="note" style="margin-top:4px;"><strong>Two-part alert mechanism.</strong> A sound plays on this device whenever a new visitor registers — useful if the coordinator is nearby. But sound alone fails if they're genuinely out of earshot, so on every return to the screen (including after auto-logout and login) the "While you were away" banner above summarises anything missed. The visitor is never lost between these two mechanisms.</div>
 
       <div class="compose-area" style="margin-top:16px;">
         <h3 style="font-size:12px;margin-bottom:10px;">Send Message to Visitor at Kiosk</h3>
@@ -347,7 +349,6 @@
         <div class="legend-item"><div class="legend-dot" style="background:var(--surface);border:1px solid var(--border);"></div> No visitor waiting</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--ok-light);border:1px solid var(--ok);"></div> Visitor admitted today</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--warn-light);border:1px solid var(--warn);"></div> Visitor waiting</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--eol-light);border:1px solid var(--eol);"></div> EOL flagged</div>
       </div>
       <div class="bed-grid">
         <div class="bed-cell"><div class="bn">01</div><div class="bs">—</div></div>
@@ -356,7 +357,7 @@
         <div class="bed-cell"><div class="bn">04</div><div class="bs">—</div></div>
         <div class="bed-cell vadmit"><div class="bn">05</div><div class="bs">admitted</div></div>
         <div class="bed-cell"><div class="bn">06</div><div class="bs">—</div></div>
-        <div class="bed-cell veol"><div class="bn">07</div><div class="bs">EOL</div></div>
+        <div class="bed-cell"><div class="bn">07</div><div class="bs">—</div></div>
         <div class="bed-cell vadmit"><div class="bn">08</div><div class="bs">admitted</div></div>
         <div class="bed-cell vw"><div class="bn">09</div><div class="bs">waiting</div></div>
         <div class="bed-cell"><div class="bn">10</div><div class="bs">—</div></div>
@@ -404,19 +405,6 @@
 
       <div>
         <div class="form-section">
-          <h3 style="margin-bottom:10px;">EOL Bay Flags</h3>
-          <p style="font-size:12px;color:var(--ink-dim);margin-bottom:12px;line-height:1.6;">Flagged bays appear at the top of the visitor queue. Staff exercise their own judgement entirely.</p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-            <div class="badge eol" style="padding:5px 10px;font-size:11px;">Bay 7 ITU &#10005;</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <input class="form-input" placeholder="Bay number" style="width:100px;">
-            <select class="form-input" style="width:80px;"><option>ITU</option><option>HDU</option></select>
-            <div class="form-btn eol-btn">Flag EOL</div>
-          </div>
-        </div>
-
-        <div class="form-section">
           <h3 style="margin-bottom:10px;">Canned Messages</h3>
           <div style="margin-bottom:10px;">
             <div class="msg-pill">"Please wait — we will be with you shortly" <span style="color:var(--urgent);font-size:10px;">&#10005;</span></div>
@@ -451,7 +439,7 @@
           <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">09:12</td><td>James</td><td>3</td><td><span class="badge itu">ITU</span></td><td>A</td><td style="color:var(--urgent);font-weight:600;">22m</td><td><span class="badge urgent">Waiting</span></td><td>—</td></tr>
           <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">09:31</td><td>Priya</td><td>14</td><td><span class="badge hdu">HDU</span></td><td>A</td><td>4m</td><td><span class="badge warn">Waiting</span></td><td>—</td></tr>
           <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">09:33</td><td>Robert</td><td>— (unsure)</td><td>—</td><td>A</td><td>2m</td><td><span class="badge warn">Needs help</span></td><td>—</td></tr>
-          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">08:55</td><td>Margaret &amp; David</td><td>7</td><td><span class="badge itu">ITU</span></td><td>B</td><td>3m</td><td><span class="badge eol">EOL waiting</span></td><td>—</td></tr>
+          <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">08:55</td><td>Margaret &amp; David</td><td>7</td><td><span class="badge itu">ITU</span></td><td>B</td><td>3m</td><td><span class="badge warn">Waiting</span></td><td>—</td></tr>
           <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">08:30</td><td>Fatima</td><td>5 &#8594; 8</td><td><span class="badge hdu">HDU</span></td><td>A</td><td>6m</td><td><span class="badge ok">Admitted (redirected)</span></td><td>B. Okonjo</td></tr>
           <tr><td style="font-family:'DM Mono',monospace;font-size:11px;">08:15</td><td>Tom</td><td>5</td><td><span class="badge hdu">HDU</span></td><td>A</td><td>3m</td><td><span class="badge ok">Admitted</span></td><td>B. Okonjo</td></tr>
         </tbody>
@@ -471,13 +459,12 @@
     <div class="section-label">Core rules</div>
     <div class="rule-item"><div class="rule-num">&#9312;</div><div class="rule-text"><strong>No visitor is ever left without acknowledgement.</strong> The kiosk confirms receipt immediately on submission, before any coordinator action has occurred.</div></div>
     <div class="rule-item"><div class="rule-num">&#9313;</div><div class="rule-text"><strong>One named role handles the queue.</strong> Receptionist, or a covering coordinator when reception is unstaffed (leave, sickness, breaks) — usually someone at coordinator level in the same area. Not open to any staff member, since ward PCs auto-log out as standard NHS practice and an unattended, unlocked dashboard would not be appropriate.</div></div>
-    <div class="rule-item"><div class="rule-num">&#9314;</div><div class="rule-text"><strong>An audible alert covers brief absence from the screen.</strong> When a new visitor registers, a sound plays at the coordinator desk. This is what makes a single-role model workable despite normal auto-logout — the coordinator returns and acts as soon as they hear it, even if the screen has locked in the meantime.</div></div>
+    <div class="rule-item"><div class="rule-num">&#9314;</div><div class="rule-text"><strong>Two-part mechanism covers absence from the screen.</strong> An audible alert plays when a new visitor registers, for when the coordinator is within earshot. But sound alone does nothing if they are genuinely away — at the far entrance, with a patient, on a break — so on every return to the screen, including after standard NHS auto-logout and re-login, a "while you were away" summary shows what was missed: count of new arrivals and the longest current wait. Together these mean a screen left unattended for any length of time is never the same as a missed visitor.</div></div>
     <div class="rule-item"><div class="rule-num">&#9315;</div><div class="rule-text"><strong>The nurse at the bay makes all admission decisions.</strong> The system surfaces the request to the coordinator, who relays it to the bay. It does not enforce or automate the decision.</div></div>
     <div class="rule-item"><div class="rule-num">&#9316;</div><div class="rule-text"><strong>The kiosk never confirms or echoes back a bay number to the visitor.</strong> This is deliberate — it is what allows a bay-movement redirect to remain invisible to the visitor at the point of arrival.</div></div>
     <div class="rule-item"><div class="rule-num">&#9317;</div><div class="rule-text"><strong>Bay-movement redirects are silent and temporary.</strong> If a patient has moved bay, the coordinator sets a redirect (old bay &#8594; new bay). A visitor entering the old number is reassigned automatically; the system tells them only that the ward has been notified. The redirect expires automatically after 24 hours. The family is informed of the move in person, in the normal way — the system never discloses it.</div></div>
     <div class="rule-item"><div class="rule-num">&#9318;</div><div class="rule-text"><strong>"I don't know the bay number" triggers no lookup.</strong> The system does not attempt to match a visitor to a patient. It simply flags the visitor to the coordinator as needing in-person help.</div></div>
     <div class="rule-item"><div class="rule-num">&#9319;</div><div class="rule-text"><strong>Restricted periods pause admissions but not registration.</strong> Visitors can still register during a ward round. They are queued and admitted when the period ends.</div></div>
-    <div class="rule-item"><div class="rule-num">&#9320;</div><div class="rule-text"><strong>EOL-flagged bays are shown at the top of the queue.</strong> Staff exercise their own judgement entirely. The system flags and prioritises — it does not change the interaction in any other way. <em>Further EOL-specific design requires input from clinical staff with current HDU/ITU experience. Existing ward practices for EOL visitors should not be disrupted by this system.</em></div></div>
     <div class="rule-item"><div class="rule-num">&#9321;</div><div class="rule-text"><strong>Nightly reset is automatic.</strong> At the configured cut-off time, all active sessions are closed and bay counts reset. Kiosk switches to visiting-ended screen. Visit log is retained. <strong>Bay-movement redirects are unaffected</strong> by the reset and continue running on their own 24-hour expiry.</div></div>
     <div class="rule-item"><div class="rule-num">&#9322;</div><div class="rule-text"><strong>Visiting resumes automatically</strong> at the configured start time. Kiosk switches back to the arrival screen. No staff action needed.</div></div>
   </div>
@@ -509,7 +496,6 @@
           <tr><td>C</td><td>Information governance review</td><td>System stores visitor first names and bay numbers — trust sign-off required</td></tr>
           <tr><td>D</td><td>Hardware — tablet or screen at each entrance, coordinator desk PC</td><td>Procurement and installation</td></tr>
           <tr><td>E</td><td>Confirm bay-movement redirect workflow with reception/coordinator staff</td><td>Needs to match how moves are actually communicated today</td></tr>
-          <tr><td>F</td><td>Gather EOL-specific requirements from current clinical staff</td><td>Before any further design beyond simple flagging</td></tr>
         </tbody>
       </table>
     </div>
@@ -582,6 +568,7 @@
             <tr><td>languages</td><td>Array</td><td>Active kiosk languages</td></tr>
             <tr><td>canned_messages</td><td>Array</td><td>Editable on dashboard</td></tr>
             <tr><td>alert_sound_enabled</td><td>Boolean</td><td>Audible alert on new visitor — on by default</td></tr>
+            <tr><td>coordinator_last_seen_at</td><td>Timestamp</td><td>Updated whenever the dashboard is actively viewed — used to compute the "while you were away" summary on next view</td></tr>
           </tbody>
         </table>
       </div>
@@ -593,7 +580,6 @@
           <tbody>
             <tr><td>bay_id</td><td>Integer</td><td>Configured per ward</td></tr>
             <tr><td>ward</td><td>String</td><td></td></tr>
-            <tr><td>eol_flag</td><td>Boolean</td><td>Set/cleared by senior staff</td></tr>
             <tr><td>visitor_admitted_today</td><td>Boolean</td><td>Resets nightly — for bay grid display only</td></tr>
             <tr><td>active</td><td>Boolean</td><td>Bed occupied</td></tr>
           </tbody>
@@ -799,6 +785,21 @@
         <h3 style="color:var(--road);">Real-Time Bay Capacity Tracking <span class="road-tag">Phase 2</span></h3>
         <p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:8px;margin-bottom:12px;">System enforces maximum 2 visitors per bay in real time. Depends on reliable sign-out. Bay grid on dashboard shows live occupancy rather than "admitted today".</p>
         <div class="rule-item road"><div class="rule-num">!</div><div class="rule-text">Cannot be reliably implemented without sign-out. Premature enforcement creates more staff interruptions than it saves.</div></div>
+      </div>
+      <div class="card road">
+        <h3 style="color:var(--road);">End of Life Bay Handling <span class="road-tag">Phase 2</span></h3>
+        <p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:8px;margin-bottom:12px;">Some form of priority flagging for EOL visitors arriving at the door. Removed from v9 entirely rather than left as a simple flag, because a brief conversation with a research-level nurse suggested current practice is likely quite different from a routine "flag and prioritise" model and may not be something a queue-based system should touch without proper input.</p>
+        <div class="rule-item road"><div class="rule-num">!</div><div class="rule-text">Needs a real conversation with clinical staff with current HDU/ITU experience before any design work resumes — not assumptions carried over from a different design context.</div></div>
+      </div>
+      <div class="card road">
+        <h3 style="color:var(--road);">Lock-Screen Visitor Count <span class="road-tag">Phase 2</span></h3>
+        <p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:8px;margin-bottom:12px;">A waiting-visitor count visible on the NHS PC's own lock/login screen, before any credentials are entered — so a coordinator glancing at a locked screen from a distance still gets a signal.</p>
+        <div class="rule-item road"><div class="rule-num">!</div><div class="rule-text">Depends on whether trust IT can customise the lock screen of a standard NHS PC, which is unknown and may not be possible at all. The returning-coordinator summary in v9 covers the same need without requiring this.</div></div>
+      </div>
+      <div class="card road">
+        <h3 style="color:var(--road);">Smart Re-Entry on Login <span class="road-tag">Phase 2</span></h3>
+        <p style="font-size:12px;color:var(--ink-dim);line-height:1.6;margin-top:8px;margin-bottom:12px;">Dashboard automatically scrolls to or highlights the longest-waiting or highest-priority visitor the moment a coordinator logs back in, rather than just showing a summary banner.</p>
+        <div class="rule-item road"><div class="rule-num">!</div><div class="rule-text">A refinement of the v9 returning-coordinator banner once real usage shows whether a passive summary is enough or whether something more directive is needed.</div></div>
       </div>
     </div>
   </div>

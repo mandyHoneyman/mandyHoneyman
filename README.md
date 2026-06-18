@@ -20,7 +20,7 @@ A lightweight web application with two components:
 
 **1. Visitor Kiosk** — a tablet at each entrance running a full-screen browser. The visitor enters their first name and bay number, or selects "I don't know the bay number" if unsure. The screen immediately confirms their arrival has been registered. They are never left without information.
 
-**2. Coordinator Dashboard** — a browser page at the reception or coordinator desk. Shows a live queue of waiting visitors, colour-coded by wait time, with an audible alert on a new arrival. Handled by the receptionist, or by a covering coordinator when reception is unstaffed. Actions: Admit or Send Message. The same screen also provides ward configuration — visiting hours, restricted periods, EOL bay flags, canned messages, and bay-movement handling — so one person can both use and administer the system.
+**2. Coordinator Dashboard** — a browser page at the reception or coordinator desk. Shows a live queue of waiting visitors, colour-coded by wait time, with an audible alert on a new arrival and a "while you were away" summary on every return to the screen — including after standard NHS auto-logout — so a sound missed at a distance is never the only safeguard. Handled by the receptionist, or by a covering coordinator when reception is unstaffed. Actions: Admit or Send Message. The same screen also provides ward configuration — visiting hours, restricted periods, canned messages, and bay-movement handling — so one person can both use and administer the system.
 
 ### Core design principle
 
@@ -31,9 +31,8 @@ A lightweight web application with two components:
 ## Key Features — v1 (Core)
 
 - **Immediate visitor acknowledgement** — kiosk confirms receipt before any staff action
-- **Coordinator-led queue** — handled by receptionist or covering coordinator, with an audible alert so a brief absence from the screen does not mean a missed arrival
+- **Coordinator-led queue** — handled by receptionist or covering coordinator, with a two-part safeguard: an audible alert for when they're nearby, and a "while you were away" summary on every return to the screen for when they're not
 - **Escalating alerts** — wait times colour-code from green to red; visitor can send a reminder after 15 minutes
-- **EOL flagging** — end-of-life bays shown at top of queue with distinct visual treatment
 - **Bay movement handling** — if a patient has moved bay, the coordinator can quietly redirect a visitor's request to the correct bay without revealing the move; the visitor is told only that the ward has been notified, and the move itself is communicated to the family in person, in the normal way
 - **Restricted period toggle** — ward rounds, handover, or emergency closure; kiosk updates immediately; toggle is on the dashboard itself, not buried in a separate admin screen
 - **Automatic nightly reset** — sessions close and bay counts reset at a configured time; visit log retained; bay-movement redirects persist independently of the reset for 24 hours
@@ -52,6 +51,8 @@ These features are designed and documented but excluded from v1 to keep the syst
 | Feature | Phase | Reason deferred |
 |---|---|---|
 | Visitor sign-out and real-time bay capacity | 2 | Unreliable without enforced sign-out; causes more interruptions than it saves |
+| End of life bay handling | 2 | Removed entirely pending a proper conversation with clinical staff; current practice may differ substantially from a routine flag-and-prioritise model |
+| Lock-screen visitor count; smart re-entry on login | 2 | Depends on whether trust IT can customise a standard NHS PC's lock screen — unknown; v9's "while you were away" summary already covers the core need |
 | Approved visitor lists and next-of-kin designation | 3 | Requires IG and legal review; patient consent process to be defined |
 | Multi-ward management view | 4 | Depends on stable single-ward deployment first |
 | Reporting and analytics | 4 | Visit log accumulates data; reporting view can be added later |
@@ -97,7 +98,7 @@ The system stores the minimum necessary. **No surnames and no patient names are 
 
 **Visit record** — visitor first name, bay number (as entered, before any redirect), ward, entrance, arrived_at, admitted_at, status, actioned_by, reminder_sent, messages, language
 
-**Bay record** — bay_id, ward, eol_flag, visitor_admitted_today, active
+**Bay record** — bay_id, ward, visitor_admitted_today, active
 
 **Bay movement redirect** — from_bay, to_bay, set_by, set_at, expires_at (24 hours after set_at). Persists independently of the nightly reset. Used to silently reassign a visitor's request; never disclosed to the visitor.
 
@@ -158,17 +159,20 @@ If the VPS fallback is used instead, this system should run over HTTPS at all ti
 | C | Information governance review; DPIA if required | Trust IG team |
 | D | Procure and install kiosk tablet(s) and coordinator-desk hardware | Trust / developer |
 | E | Confirm bay-movement redirect workflow with reception/coordinator staff | Ward sister / matron |
-| F | Gather EOL-specific requirements from current clinical staff before further design | Ward sister / matron |
 | G | Notify trust IT and IG before go-live, even for a limited pilot | Project lead |
 
 ---
 
 ## Roadmap
 
-### Phase 2 — Visitor sign-out and capacity tracking
+### Phase 2 — Visitor sign-out, capacity tracking, and EOL handling
 Visitor taps "I am leaving" on kiosk. Bay count updated. Coordinator can manually clear a visitor from the dashboard. Real-time bay capacity enforced once sign-out is reliable.
 
 **Known problem to solve first:** visitors who step out temporarily and forget to sign out are locked out on return. This must be addressed before sign-out can gate admission.
+
+**End of life bay handling** also sits in this phase. It was removed from v9 entirely rather than left as a simple priority flag, because a brief conversation with a research-level nurse suggested current EOL practice may differ substantially from a routine queue-priority model. This needs a proper conversation with clinical staff with current HDU/ITU experience before any further design work, not assumptions carried over from elsewhere in the system.
+
+**Lock-screen visitor count and smart re-entry** are smaller refinements also held here: a waiting-visitor count visible on the NHS PC's own lock screen before login, and a dashboard that auto-highlights the longest-waiting visitor on return. Both depend on whether trust IT can customise a standard NHS PC's lock screen, which is unknown — the v9 "while you were away" summary already covers the core need without requiring this.
 
 ### Phase 3 — Approved visitor lists
 Each patient has a list of approved visitors, built at the bedside by the patient or next of kin with nursing assistance. One next-of-kin designation per patient. Unlisted visitors held pending verification. Ward sister has override authority.
@@ -182,17 +186,18 @@ The system is already designed to be configurable per ward. Phase 4 adds a trust
 
 ## Background and Design Process
 
-This system was designed through an extended requirements-gathering process with a senior critical care nurse, with further peer review from a colleague and from a research-level nurse (principal investigator). The design iterated through multiple blueprint versions, each incorporating new requirements and constraints as they emerged — including a deliberate simplification pass to strip the first version back to its essential core, with several well-understood features moved to a clearly labelled roadmap instead.
+This system was designed through an extended requirements-gathering process with a senior critical care nurse, with further peer review from a colleague and a conversation with a research-level nurse. The design iterated through multiple blueprint versions, each incorporating new requirements and constraints as they emerged — including a deliberate simplification pass to strip the first version back to its essential core, with several well-understood features moved to a clearly labelled roadmap instead.
 
 Key decisions made during design:
 
 - **No reliance on visitor mobile phones** — the kiosk screen is the only visitor-facing output
 - **First name only stored** — sufficient for staff to address the visitor and personalise messages; reduces information governance weight
-- **Coordinator-led, not open-to-any-staff** — ward PCs auto-log out as standard NHS practice, which made an always-unlocked, any-staff-member dashboard unworkable; responsibility now sits with the receptionist or covering coordinator, supported by an audible alert
+- **Coordinator-led, not open-to-any-staff** — ward PCs auto-log out as standard NHS practice, which made an always-unlocked, any-staff-member dashboard unworkable; responsibility now sits with the receptionist or covering coordinator
+- **Two-part alert, not sound alone** — an audible alert helps when the coordinator is nearby, but a "while you were away" summary on every return to the screen is what actually closes the gap when they are genuinely out of earshot
 - **Bay capacity tracking deferred** — sign-out cannot be reliably enforced on distressed visitors; tracking without enforcement creates more problems than it solves
 - **Approved visitor lists deferred** — real clinical value but requires governance work that should not delay the core system
 - **Bay movement handled silently** — if a patient moves bay, the system redirects a visitor's request without revealing the move, so families are never told about a transfer by a kiosk screen; the redirect expires automatically after 24 hours
-- **EOL handling kept deliberately minimal** — the system flags and prioritises an EOL bay only; further design is intentionally on hold pending input from clinical staff with current experience, so as not to cut across established practice
+- **EOL handling moved to the roadmap entirely** — rather than a simple flag, a brief conversation with a research-level nurse suggested current EOL practice may differ substantially from a routine queue-priority model; proper design needs a real conversation with current clinical staff before it resumes
 - **Generic by design** — deployable on any locked ward, not specific to HDU/ITU
 
 ---
