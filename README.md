@@ -1,6 +1,6 @@
 # Ward Visitor Management System
 
-A web-based visitor management system for locked hospital wards. Designed to replace intercom and telephone-based entry systems with a simple kiosk, staff dashboard, and ward admin panel.
+A web-based visitor management system for locked hospital wards. Designed to replace intercom and telephone-based entry systems with a simple kiosk and a coordinator-facing dashboard.
 
 ---
 
@@ -16,13 +16,11 @@ The core problem: **visitors are forgotten — not through neglect, but because 
 
 ## The Solution
 
-A lightweight web application with three components:
+A lightweight web application with two components:
 
-**1. Visitor Kiosk** — a tablet at each entrance running a full-screen browser. The visitor enters their name and bay number. The screen immediately confirms their arrival has been registered. They are never left without information.
+**1. Visitor Kiosk** — a tablet at each entrance running a full-screen browser. The visitor enters their first name and bay number, or selects "I don't know the bay number" if unsure. The screen immediately confirms their arrival has been registered. They are never left without information.
 
-**2. Staff Dashboard** — a browser page open on any ward PC. Shows a live queue of waiting visitors, colour-coded by wait time. Any staff member can act — no login required, no assigned responsibility. Two actions: Admit or Send Message.
-
-**3. Ward Admin Panel** — PIN-protected. Used by the ward sister or nurse manager. Configures the ward: visiting hours, restricted periods (ward rounds, handover), EOL bay flags, canned messages, and kiosk languages. No IT support needed for day-to-day use.
+**2. Coordinator Dashboard** — a browser page at the reception or coordinator desk. Shows a live queue of waiting visitors, colour-coded by wait time, with an audible alert on a new arrival. Handled by the receptionist, or by a covering coordinator when reception is unstaffed. Actions: Admit or Send Message. The same screen also provides ward configuration — visiting hours, restricted periods, EOL bay flags, canned messages, and bay-movement handling — so one person can both use and administer the system.
 
 ### Core design principle
 
@@ -33,16 +31,17 @@ A lightweight web application with three components:
 ## Key Features — v1 (Core)
 
 - **Immediate visitor acknowledgement** — kiosk confirms receipt before any staff action
-- **Shared queue** — any staff member on any ward PC can action a request
+- **Coordinator-led queue** — handled by receptionist or covering coordinator, with an audible alert so a brief absence from the screen does not mean a missed arrival
 - **Escalating alerts** — wait times colour-code from green to red; visitor can send a reminder after 15 minutes
 - **EOL flagging** — end-of-life bays shown at top of queue with distinct visual treatment
-- **Restricted period toggle** — ward rounds, handover, or emergency closure; kiosk updates immediately
-- **Automatic nightly reset** — sessions close and bay counts reset at a configured time; visit log retained
+- **Bay movement handling** — if a patient has moved bay, the coordinator can quietly redirect a visitor's request to the correct bay without revealing the move; the visitor is told only that the ward has been notified, and the move itself is communicated to the family in person, in the normal way
+- **Restricted period toggle** — ward rounds, handover, or emergency closure; kiosk updates immediately; toggle is on the dashboard itself, not buried in a separate admin screen
+- **Automatic nightly reset** — sessions close and bay counts reset at a configured time; visit log retained; bay-movement redirects persist independently of the reset for 24 hours
 - **Automatic visiting hours** — kiosk opens and closes at configured start and end times; no staff action needed
 - **Canned messages** — staff send pre-written messages to the visitor's kiosk screen with one tap
 - **Multi-language kiosk** — language selector persists for the session; bay number entry is numeric and language-neutral
 - **Visit log** — full timestamped record of arrivals, wait times, admissions, and actioning staff member
-- **Pilot feedback widget** — anonymous 1–4 star rating with optional comment; visitor or staff checkbox; active during pilot only
+- **Pilot feedback via QR code** — kiosk frame carries a QR code linking to a trust Microsoft Forms survey; no in-system feedback pipeline to build or govern
 
 ---
 
@@ -54,7 +53,6 @@ These features are designed and documented but excluded from v1 to keep the syst
 |---|---|---|
 | Visitor sign-out and real-time bay capacity | 2 | Unreliable without enforced sign-out; causes more interruptions than it saves |
 | Approved visitor lists and next-of-kin designation | 3 | Requires IG and legal review; patient consent process to be defined |
-| Electronic door release integration | 3 | Estates and IT feasibility unknown |
 | Multi-ward management view | 4 | Depends on stable single-ward deployment first |
 | Reporting and analytics | 4 | Visit log accumulates data; reporting view can be added later |
 
@@ -67,46 +65,45 @@ These features are designed and documented but excluded from v1 to keep the syst
 | File | Purpose |
 |---|---|
 | `kiosk.html` | Visitor-facing entrance screen; full-screen mode on tablets |
-| `dashboard.html` | Staff view; open on ward PCs |
-| `admin.html` | Ward admin panel; PIN-protected |
+| `dashboard.html` | Coordinator view and ward configuration; reception/coordinator desk PC |
 | `style.css` | Shared styles |
-| `app.js` | Shared logic — form handling, WebSocket updates |
+| `app.js` | Shared logic — form handling, real-time updates, audible alert |
 
 ### Backend
 
 | Component | Purpose |
 |---|---|
 | Node.js + Express | HTTP server and API routes |
-| Socket.io | Real-time updates — dashboard and kiosk update instantly |
-| SQLite (pilot) / PostgreSQL (production) | Visit records, ward state, feedback |
-| Cron jobs | Nightly reset; visiting hours start/end |
+| Real-time updates | WebSockets, server-sent events, or polling — final choice depends on pilot scale |
+| SQLite | Visit records, ward state, bay-movement redirects |
+| Cron jobs | Nightly reset; visiting hours start/end; bay-movement redirect expiry (24 hours) |
 
 ### Real-time flow
 
 ```
 Visitor submits form on kiosk
   → POST to server
+  → If bay has an active movement redirect, request is reassigned silently
   → Record saved to database
-  → WebSocket broadcast to all dashboard instances
-  → Dashboard updates live
-  → Kiosk shows confirmation immediately
+  → Dashboard updates live; audible alert plays
+  → Kiosk shows confirmation immediately — no bay number echoed back
 ```
 
 ---
 
 ## Data Model — Summary
 
-The system stores the minimum necessary. **No patient names are stored at any point.**
+The system stores the minimum necessary. **No surnames and no patient names are stored at any point.**
 
-**Visit record** — visitor name, bay number, ward, entrance, arrived\_at, admitted\_at, status, actioned\_by, reminder\_sent, messages, language
+**Visit record** — visitor first name, bay number (as entered, before any redirect), ward, entrance, arrived_at, admitted_at, status, actioned_by, reminder_sent, messages, language
 
-**Bay record** — bay\_id, ward, eol\_flag, visitor\_admitted\_today, active
+**Bay record** — bay_id, ward, eol_flag, visitor_admitted_today, active
 
-**Ward state** — ward\_name, visiting\_start\_time, visiting\_end\_time, visiting\_active, restricted\_period\_active, restriction\_type, resume\_time, entrances, languages, canned\_messages
+**Bay movement redirect** — from_bay, to_bay, set_by, set_at, expires_at (24 hours after set_at). Persists independently of the nightly reset. Used to silently reassign a visitor's request; never disclosed to the visitor.
 
-**Feedback record** (pilot only) — stars, comment, respondent\_type (visitor/staff), source (kiosk/dashboard), submitted\_at. No link to visit records.
+**Ward state** — ward_name, visiting_start_time, visiting_end_time, visiting_active, restricted_period_active, restriction_type, resume_time, entrances, languages, canned_messages
 
-Bay number is the only link between a visitor record and a patient location.
+First name and bay number are the only personal data held. Bay number is the only link between a visitor record and a patient location.
 
 ---
 
@@ -115,17 +112,22 @@ Bay number is the only link between a visitor record and a patient location.
 | State | Trigger |
 |---|---|
 | Ready for input | Default during visiting hours |
-| Confirmed | After visitor submits name and bay number |
-| Restricted period | Ward round / handover / emergency — set by staff |
+| Confirmed | After visitor submits first name and bay number, or selects "I don't know the bay number" |
+| Restricted period | Ward round / handover / emergency — set by coordinator |
 | Visiting hours ended | Automatic at configured end time |
-| Staff message | Staff sends canned or custom message to waiting visitor |
+| Staff message | Coordinator sends canned or custom message to waiting visitor |
+
+"I don't know the bay number" does not trigger a lookup. It flags the visitor to the coordinator as needing in-person help.
 
 ---
 
 ## Hosting
 
-### Pilot
-A small VPS (e.g. DigitalOcean, Hetzner) in a UK data centre. Approximately £5–10/month. HTTPS via Let's Encrypt (free). All data on the server — no third-party services.
+### Pilot — preferred
+A Raspberry Pi or small mini PC, physically on the ward, running its own private WiFi network (travel router or the Pi's own access point). The kiosk tablet and the coordinator desk PC connect to this network only. No NHS WiFi, no internet, no data leaving the building. Approximate hardware cost £150–250, one-off.
+
+### Pilot — fallback
+A small UK-based VPS with HTTPS via Let's Encrypt, accessed over NHS WiFi. Viable if the local-appliance approach proves impractical, but requires captive portal testing and raises a data-residency conversation that the local appliance avoids.
 
 ### Production
 Trust-hosted infrastructure or NHS-accredited cloud platform. Trust IT and information governance team must be involved before production deployment.
@@ -137,13 +139,13 @@ GitHub Pages (static only — no backend). Personal web hosting (not appropriate
 
 ## Security and Network Notes
 
-This system is intended to run over HTTPS at all times. This is non-negotiable.
+If the local-appliance pilot architecture is used, the system never touches NHS WiFi or the internet, which removes most of the network risk below by design.
 
-The pilot envisages using open NHS hospital WiFi. This creates two considerations:
+If the VPS fallback is used instead, this system should run over HTTPS at all times — non-negotiable — and the following apply:
 
 1. **HTTPS** encrypts traffic between browser and server and mitigates the main risk of a public network.
-2. **Staff dashboard on open WiFi** is a concern — visitor names and bay numbers are displayed. Ideally the dashboard is accessed from the trust's internal staff network rather than the public WiFi. Raise with trust IT before pilot.
-3. **Captive portal** — NHS open WiFi often requires a browser sign-in page. Tablets in kiosk mode may not handle this automatically. A dedicated ward SSID or VLAN would solve this and is the recommended approach.
+2. **Coordinator dashboard on open WiFi** is a concern — visitor first names and bay numbers are displayed. Ideally accessed from the trust's internal staff network rather than the public WiFi.
+3. **Captive portal** — NHS open WiFi often requires a browser sign-in page. Tablets in kiosk mode may not handle this automatically. A dedicated ward SSID or VLAN would solve this if the VPS fallback is used.
 
 ---
 
@@ -151,29 +153,27 @@ The pilot envisages using open NHS hospital WiFi. This creates two consideration
 
 | # | Item | Owner |
 |---|---|---|
-| A | Electronic door integration — estates/IT feasibility assessment | Trust IT / Estates |
-| B | Confirm wait time thresholds (proposed: 5 min amber, 15 min red) with ward staff | Ward sister / matron |
-| C | Identify languages needed on kiosk beyond English; arrange translations | Ward / developer |
-| D | Information governance review; DPIA if required | Trust IG team |
-| E | Procure and install kiosk tablets at entrances | Trust / developer |
-| F | Resolve ward WiFi / captive portal issue for kiosk tablets | Trust IT |
-| G | Notify trust IT and IG before go-live, even for limited pilot | Project lead |
+| A | Confirm wait time thresholds (proposed: 5 min amber, 15 min red) with ward staff | Ward sister / matron |
+| B | Identify languages needed on kiosk beyond English; arrange translations | Ward / developer |
+| C | Information governance review; DPIA if required | Trust IG team |
+| D | Procure and install kiosk tablet(s) and coordinator-desk hardware | Trust / developer |
+| E | Confirm bay-movement redirect workflow with reception/coordinator staff | Ward sister / matron |
+| F | Gather EOL-specific requirements from current clinical staff before further design | Ward sister / matron |
+| G | Notify trust IT and IG before go-live, even for a limited pilot | Project lead |
 
 ---
 
 ## Roadmap
 
 ### Phase 2 — Visitor sign-out and capacity tracking
-Visitor taps "I am leaving" on kiosk. Bay count updated. Staff can manually clear a visitor from the dashboard. Real-time bay capacity enforced once sign-out is reliable.
+Visitor taps "I am leaving" on kiosk. Bay count updated. Coordinator can manually clear a visitor from the dashboard. Real-time bay capacity enforced once sign-out is reliable.
 
 **Known problem to solve first:** visitors who step out temporarily and forget to sign out are locked out on return. This must be addressed before sign-out can gate admission.
 
-### Phase 3 — Approved visitor lists and electronic door release
+### Phase 3 — Approved visitor lists
 Each patient has a list of approved visitors, built at the bedside by the patient or next of kin with nursing assistance. One next-of-kin designation per patient. Unlisted visitors held pending verification. Ward sister has override authority.
 
 **Prerequisite:** IG and legal review. The distinction between next of kin and Lasting Power of Attorney holder must be clarified by the trust's legal team before next-of-kin is formalised as an access control role.
-
-Electronic door release: Admit button triggers door latch directly. Requires estates and IT feasibility assessment.
 
 ### Phase 4 — Multi-ward deployment and reporting
 The system is already designed to be configurable per ward. Phase 4 adds a trust-wide management view and a reporting dashboard drawing on the accumulated visit log.
@@ -182,27 +182,35 @@ The system is already designed to be configurable per ward. Phase 4 adds a trust
 
 ## Background and Design Process
 
-This system was designed through an extended requirements-gathering process with a senior critical care nurse. The design iterated through six blueprint versions, each incorporating new requirements and constraints as they emerged.
+This system was designed through an extended requirements-gathering process with a senior critical care nurse, with further peer review from a colleague and from a research-level nurse (principal investigator). The design iterated through multiple blueprint versions, each incorporating new requirements and constraints as they emerged — including a deliberate simplification pass to strip the first version back to its essential core, with several well-understood features moved to a clearly labelled roadmap instead.
 
 Key decisions made during design:
 
 - **No reliance on visitor mobile phones** — the kiosk screen is the only visitor-facing output
-- **No login required for the staff dashboard** — any staff member on any ward PC can act; no single point of failure
+- **First name only stored** — sufficient for staff to address the visitor and personalise messages; reduces information governance weight
+- **Coordinator-led, not open-to-any-staff** — ward PCs auto-log out as standard NHS practice, which made an always-unlocked, any-staff-member dashboard unworkable; responsibility now sits with the receptionist or covering coordinator, supported by an audible alert
 - **Bay capacity tracking deferred** — sign-out cannot be reliably enforced on distressed visitors; tracking without enforcement creates more problems than it solves
 - **Approved visitor lists deferred** — real clinical value but requires governance work that should not delay the core system
-- **Self-configurable by ward staff** — no IT involvement needed for day-to-day operation
+- **Bay movement handled silently** — if a patient moves bay, the system redirects a visitor's request without revealing the move, so families are never told about a transfer by a kiosk screen; the redirect expires automatically after 24 hours
+- **EOL handling kept deliberately minimal** — the system flags and prioritises an EOL bay only; further design is intentionally on hold pending input from clinical staff with current experience, so as not to cut across established practice
 - **Generic by design** — deployable on any locked ward, not specific to HDU/ITU
 
 ---
 
 ## Status
 
-> Blueprint complete. Development not yet started.
+> Blueprint in progress. Development not yet started.
 
-The interactive blueprint (HTML) is included in this repository and documents the full intended system including all screens, data models, rules, and roadmap items.
+The interactive blueprint (HTML, CSS, and JS) is included in this repository and documents the intended system including all screens, data models, rules, and roadmap items. The coordinator-led dashboard and bay-movement handling described above are recent decisions from clinical review.
 
 ---
 
 ## Licence
 
-To be confirmed prior to any trust deployment.
+Licensed under the [GNU Affero General Public License v3.0 (AGPL v3)](https://www.gnu.org/licenses/agpl-3.0.en.html) during development and pilot phases.
+
+This means anyone using, modifying, or running this software as a web service must release their modifications under the same licence. This is intentional — it ensures improvements made by any organisation deploying this system are shared back with the community.
+
+**The licence will transition to Apache 2.0 upon formal NHS trust adoption.**
+
+The intent behind this approach is to keep the system genuinely open during development, protect against proprietary capture, and then move to a more permissive licence that reduces friction for NHS IT procurement at the point of formal adoption.
