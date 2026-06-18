@@ -1,3 +1,9 @@
+## Contact
+
+Open an issue on this repository for questions or feedback.
+
+---
+
 # Ward Visitor Management System
 
 A web-based visitor management system for locked hospital wards. Designed to replace intercom and telephone-based entry systems with a simple kiosk and a coordinator-facing dashboard.
