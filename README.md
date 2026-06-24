@@ -224,7 +224,16 @@ This means anyone using, modifying, or running this software as a web service mu
 
 **The licence will transition to Apache 2.0 upon formal NHS trust adoption.**
 
-The intent behind this approach is to keep the system genuinely open during development, protect against proprietary capture, and then move to a more permissive licence that reduces friction for NHS IT procurement at the point of formal adoption.
+---
+
+## Licence Headers
+
+All source files must carry the following header comment:
+Ward Visitor Management System
+In memoriam: Rick Quillen (1963–2026)
+Licensed under the GNU Affero General Public License v3.0
+See LICENSE for full terms.
+This header must be preserved in all files, including any added by future contributors.
 
 ---
 
