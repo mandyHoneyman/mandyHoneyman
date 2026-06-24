@@ -229,10 +229,12 @@ This means anyone using, modifying, or running this software as a web service mu
 ## Licence Headers
 
 All source files must carry the following header comment:
+```
 Ward Visitor Management System
 In memoriam: Rick Quillen (1963–2026)
 Licensed under the GNU Affero General Public License v3.0
 See LICENSE for full terms.
+```
 This header must be preserved in all files, including any added by future contributors.
 
 ---
